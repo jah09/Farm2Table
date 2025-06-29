@@ -12,6 +12,8 @@ import { useCart } from "@/components/consumer/cart-context"
 import { useProduce } from "@/components/shared/produce-context"
 import { useUser } from "@/components/shared/user-context"
 import { Logo } from "@/components/shared/logo"
+import { useRouter } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
 
 interface SearchFilters {
   category: string
@@ -46,6 +48,7 @@ function getUnit(unit: string | undefined): string {
 }
 
 export function ConsumerBrowse() {
+  const router = useRouter()
   const { user, logout } = useUser()
   const { addToCart, cart, updateQuantity } = useCart()
   const { produces, searchProduce } = useProduce()
@@ -55,6 +58,7 @@ export function ConsumerBrowse() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({
     category: "all",
     maxPrice: 500,
@@ -226,15 +230,111 @@ export function ConsumerBrowse() {
   }
 
   const handleAddToCart = (produce: any) => {
-    addToCart({
-      id: produce.id,
-      name: produce.name,
-      price: produce.price,
+    try {
+      addToCart({
+        id: produce.id,
+        name: produce.name,
+        price: produce.price,
+        quantity: 1,
+        unit: getUnit(produce.unit),
+        producer: produce.producer || "Unknown Producer",
+        maxQuantity: produce.quantity || 100
+      })
+      
+      // Show success feedback
+      toast({
+        title: "Added to cart",
+        description: `${produce.name} has been added to your cart`,
+        duration: 2000,
+      })
+    } catch (error) {
+      console.error("Error adding to cart:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUpdateQuantity = (produceId: string, newQuantity: number) => {
+    try {
+      updateQuantity(produceId, newQuantity)
+    } catch (error) {
+      console.error("Error updating quantity:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update quantity. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Debug function to check localStorage
+  const debugCart = () => {
+    const localStorageCart = localStorage.getItem("farm2table-cart")
+    console.log("Current cart state:", cart)
+    console.log("localStorage cart:", localStorageCart)
+    console.log("localStorage parsed:", localStorageCart ? JSON.parse(localStorageCart) : null)
+  }
+
+  // Force refresh cart from localStorage
+  const forceRefreshCart = () => {
+    const localStorageCart = localStorage.getItem("farm2table-cart")
+    if (localStorageCart) {
+      try {
+        const parsedCart = JSON.parse(localStorageCart)
+        console.log("Force refreshing cart from localStorage:", parsedCart)
+        // This will trigger a re-render by accessing the cart state
+        toast({
+          title: "Cart refreshed",
+          description: `Loaded ${parsedCart.length} items from localStorage`,
+          duration: 2000,
+        })
+      } catch (error) {
+        console.error("Error parsing localStorage cart:", error)
+        toast({
+          title: "Error",
+          description: "Failed to refresh cart from localStorage",
+          variant: "destructive",
+        })
+      }
+    } else {
+      toast({
+        title: "No cart data",
+        description: "No cart data found in localStorage",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Test cart functionality
+  const testCart = () => {
+    const testItem = {
+      id: "test-item-" + Date.now(),
+      name: "Test Item",
+      price: 100,
       quantity: 1,
-      unit: getUnit(produce.unit),
-      producer: produce.producer || "Unknown Producer",
-      maxQuantity: produce.quantity || 100
-    })
+      unit: "kg",
+      producer: "Test Producer",
+      maxQuantity: 10
+    }
+    
+    try {
+      addToCart(testItem)
+      toast({
+        title: "Test item added",
+        description: "Test item has been added to cart",
+        duration: 2000,
+      })
+    } catch (error) {
+      console.error("Error adding test item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add test item",
+        variant: "destructive",
+      })
+    }
   }
 
   if (!user) {
@@ -256,7 +356,7 @@ export function ConsumerBrowse() {
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              onClick={() => window.location.href = '/consumer/cart'}
+              onClick={() => router.push('/consumer/cart')}
               className="border-green-200 text-green-700 hover:bg-green-50 bg-transparent relative"
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
@@ -269,6 +369,13 @@ export function ConsumerBrowse() {
             </Button>
             <Button
               variant="outline"
+              onClick={() => setShowDebug(!showDebug)}
+              className="border-red-200 text-red-700 hover:bg-red-50 bg-transparent"
+            >
+              Debug
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleLogout}
               className="border-green-200 text-green-700 hover:bg-green-50 bg-transparent"
             >
@@ -277,6 +384,61 @@ export function ConsumerBrowse() {
             </Button>
           </div>
         </div>
+
+        {/* Debug Panel */}
+        {showDebug && (
+          <Card className="border-red-200 shadow-lg mb-6">
+            <CardHeader>
+              <CardTitle className="text-red-800">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <h4 className="font-semibold text-red-700 mb-2">Current Cart State:</h4>
+                  <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                    {JSON.stringify(cart, null, 2)}
+                  </pre>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-red-700 mb-2">localStorage Cart:</h4>
+                  <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                    {localStorage.getItem("farm2table-cart") || "No data"}
+                  </pre>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={debugCart}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Log to Console
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={forceRefreshCart}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Force Refresh
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={testCart}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Test Cart
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => localStorage.removeItem("farm2table-cart")}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Clear localStorage
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search and AI Assistant Section */}
         <div className="grid gap-6 lg:grid-cols-3 mb-8">
@@ -527,7 +689,7 @@ export function ConsumerBrowse() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateQuantity(produce.id, getCartQuantity(produce.id) - 1)}
+                              onClick={() => handleUpdateQuantity(produce.id, getCartQuantity(produce.id) - 1)}
                               className="h-8 w-8 p-0"
                             >
                               <Minus className="w-3 h-3" />
@@ -536,7 +698,7 @@ export function ConsumerBrowse() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateQuantity(produce.id, getCartQuantity(produce.id) + 1)}
+                              onClick={() => handleUpdateQuantity(produce.id, getCartQuantity(produce.id) + 1)}
                               className="h-8 w-8 p-0"
                             >
                               <Plus className="w-3 h-3" />

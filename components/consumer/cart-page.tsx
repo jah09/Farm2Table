@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { ArrowLeft, Plus, Minus, Trash2, ShoppingBag } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/consumer/cart-context"
 import { Logo } from "@/components/shared/logo"
+import { toast } from "@/hooks/use-toast"
 
 export function CartPage() {
   const router = useRouter()
@@ -26,6 +27,12 @@ export function CartPage() {
     notes: "",
   })
 
+  // Debug cart state on mount
+  useEffect(() => {
+    console.log("CartPage mounted, cart state:", cart)
+    console.log("localStorage cart:", localStorage.getItem("farm2table-cart"))
+  }, [cart])
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsCheckingOut(true)
@@ -35,7 +42,48 @@ export function CartPage() {
       setOrderPlaced(true)
       setIsCheckingOut(false)
       clearCart()
+      toast({
+        title: "Order placed successfully!",
+        description: "Your order has been sent to the producers",
+        duration: 5000,
+      })
     }, 2000)
+  }
+
+  const handleUpdateQuantity = (id: string, newQuantity: number) => {
+    try {
+      updateQuantity(id, newQuantity)
+      toast({
+        title: "Quantity updated",
+        description: "Cart quantity has been updated",
+        duration: 2000,
+      })
+    } catch (error) {
+      console.error("Error updating quantity:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update quantity. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRemoveFromCart = (id: string) => {
+    try {
+      removeFromCart(id)
+      toast({
+        title: "Item removed",
+        description: "Item has been removed from your cart",
+        duration: 2000,
+      })
+    } catch (error) {
+      console.error("Error removing item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to remove item. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   if (orderPlaced) {
@@ -130,7 +178,7 @@ export function CartPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => handleRemoveFromCart(item.id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -142,7 +190,7 @@ export function CartPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                         className="border-green-200 text-green-700 hover:bg-green-50"
                       >
                         <Minus className="w-4 h-4" />
@@ -151,7 +199,7 @@ export function CartPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                         disabled={item.quantity >= item.maxQuantity}
                         className="border-green-200 text-green-700 hover:bg-green-50"
                       >

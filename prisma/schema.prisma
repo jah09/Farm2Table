@@ -28,6 +28,7 @@ model User {
   // Relations
   produces Produce[] @relation("ProducerProduce")
   orders   Order[]   @relation("CustomerOrders")
+  cart     Cart?     @relation("UserCart")
 
   @@map("users")
 }
@@ -74,8 +75,37 @@ model Produce {
   producer   User   @relation("ProducerProduce", fields: [producerId], references: [id], onDelete: Cascade)
 
   orderItems OrderItem[]
+  cartItems  CartItem[]
 
   @@map("produces")
+}
+
+model Cart {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String @unique @db.ObjectId
+  user   User   @relation("UserCart", fields: [userId], references: [id], onDelete: Cascade)
+  items  CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int
+  price    Float // Price at time of adding to cart
+  
+  // Relations
+  cartId   String @db.ObjectId
+  cart     Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  
+  produceId String  @db.ObjectId
+  produce   Produce @relation(fields: [produceId], references: [id], onDelete: Cascade)
+
+  @@map("cart_items")
 }
 
 model Order {
