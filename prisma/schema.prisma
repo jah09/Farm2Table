@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole
+  
+  // Producer-specific fields
+  farmName     String?
+  location     String? // Province/City
+  farmingMethod String? // "Organic", "Hydroponic", "Conventional"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  produces Produce[] @relation("ProducerProduce")
+  orders   Order[]   @relation("CustomerOrders")
+
+  @@map("users")
+}
+
+model Produce {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Core product information
+  name                  String   // Main identifier (e.g., "Organic Kale")
+  description           String?  // Rich context (e.g., "fresh, locally grown")
+  price                 Float
+  quantity              Int
+  unit                  String   @default("kg")
+  imageUrl              String?
+  isActive              Boolean  @default(true)
+  
+  // Enhanced categorization for better embeddings
+  category              String?  // "Fruit", "Vegetable", "Herb", "Root", "Leafy"
+  subCategory           String?  // "Citrus", "Berry", "Cruciferous", etc.
+  season                String?  // "Spring", "Summer", "Fall", "Winter", "Year-round"
+  farmingMethod         String?  // "Organic", "Hydroponic", "Conventional", "Biodynamic"
+  location              String?  // Province/City (can override producer location)
+  
+  // Nutritional and quality attributes
+  nutritionalHighlights String[] // ["High in Vitamin C", "Rich in Iron", "Antioxidants"]
+  storageInstructions   String?  // "Refrigerate", "Room temperature", etc.
+  shelfLife             String?  // "3-5 days", "1 week", etc.
+  
+  // Usage and preparation
+  commonUses            String[] // ["Salads", "Smoothies", "Cooking", "Juicing"]
+  preparationTips       String?  // "Wash thoroughly", "Remove stems", etc.
+  
+  // AI-related fields
+  descriptionEmbedding  Float[]  // Vector embedding of rich context
+  aiGeneratedDescription Boolean @default(false)
+  embeddingModel         String? @default("text-embedding-3-small")
+  embeddingText         String?  // The full text used for embedding
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  producerId String @db.ObjectId
+  producer   User   @relation("ProducerProduce", fields: [producerId], references: [id], onDelete: Cascade)
+
+  orderItems OrderItem[]
+
+  @@map("produces")
+}
+
+model Order {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber String      @unique
+  status      OrderStatus @default(PENDING)
+  totalAmount Float
+  
+  // Customer Information
+  customerName    String
+  customerPhone   String
+  customerAddress String
+  specialNotes    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  customerId String      @db.ObjectId
+  customer   User        @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int
+  price    Float // Price at time of order
+  
+  // Relations
+  orderId   String  @db.ObjectId
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  produceId String  @db.ObjectId
+  produce   Produce @relation(fields: [produceId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model AIConversation {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  question  String
+  response  String
+  userId    String?  @db.ObjectId
+  createdAt DateTime @default(now())
+
+  @@map("ai_conversations")
+}
+
+enum UserRole {
+  PRODUCER
+  CONSUMER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
