@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }))
 
     // Get semantic recommendations using embeddings
-    const { recommendations, explanation } = await getSemanticRecommendations(question, formattedProduces)
+    const { recommendations, explanation } = await getSemanticRecommendations(question)
 
     // Save conversation
     await saveAIConversation(question, explanation, userId)

@@ -403,3 +403,5 @@ Explain in 2-3 sentences why these items are perfect matches, highlighting local
     }
   }
 }
+
+export { getContextualRecommendations as getSemanticRecommendations }
