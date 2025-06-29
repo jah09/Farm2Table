@@ -50,9 +50,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   // Redirect based on user role when user changes
   useEffect(() => {
     if (user && !isLoading) {
-      if (user.role === "PRODUCER") {
+      // Only redirect if we're not already on the correct page
+      const currentPath = window.location.pathname
+      if (user.role === "PRODUCER" && !currentPath.startsWith("/producer")) {
         router.push("/producer/dashboard")
-      } else {
+      } else if (user.role === "CONSUMER" && !currentPath.startsWith("/consumer")) {
         router.push("/consumer/browse")
       }
     }
@@ -124,13 +126,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      // First clear the user state to prevent automatic redirects
       setUser(null)
+      
+      // Then call the logout API
+      await fetch("/api/auth/logout", { method: "POST" })
+      
       toast.success("Logged out successfully")
       router.push("/")
     } catch (error) {
       console.error("Logout error:", error)
       toast.error("Logout failed")
+      // If logout fails, we should re-check auth status
+      await checkAuthStatus()
     }
   }
 
