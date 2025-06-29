@@ -12,6 +12,8 @@ import { Logo } from "@/components/shared/logo"
 import { EnhancedProduceForm } from "./enhanced-produce-form"
 import { PricingAssistant } from "./pricing-assistant"
 import { MarketTrendsDashboard } from "./market-trends-dashboard"
+import { KnowledgeBaseManager } from "./knowledge-base-manager"
+import { ConversationAnalytics } from "./conversation-analytics"
 
 export function ProducerDashboard() {
   const { user, logout } = useUser()
@@ -101,7 +103,7 @@ export function ProducerDashboard() {
 
         {/* Dashboard Tabs */}
         <Tabs defaultValue="add-produce" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
             <TabsTrigger value="add-produce" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Add Produce
@@ -125,7 +127,7 @@ export function ProducerDashboard() {
               Knowledge Base
             </TabsTrigger>
             <TabsTrigger value="conversations" className="flex items-center gap-2">
-              {/* <MessageSquare className="w-4 h-4" /> */}
+              <MessageSquare className="w-4 h-4" />
               Conversations
             </TabsTrigger>
           </TabsList>
@@ -240,12 +242,12 @@ export function ProducerDashboard() {
 
           {/* Knowledge Base Tab */}
           <TabsContent value="knowledge-base">
-            {/* <KnowledgeBaseManager /> */}
+            <KnowledgeBaseManager />
           </TabsContent>
 
           {/* Conversations Tab */}
           <TabsContent value="conversations">
-            {/* <ConversationAnalytics /> */}
+            <ConversationAnalytics />
           </TabsContent>
         </Tabs>
       </div>
