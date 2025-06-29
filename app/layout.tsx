@@ -1,15 +1,14 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { Toaster } from "sonner"
+import { UserProvider } from "@/components/shared/user-context"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Farm2Table - Fresh Produce Direct",
-  description: "Connect farmers with consumers for fresh, local produce",
-    generator: 'v0.dev'
+  title: "Farm2Table - Fresh Produce Direct from Farm",
+  description: "Connect directly with local farmers for fresh, organic produce",
 }
 
 export default function RootLayout({
@@ -20,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
-        <Toaster />
+        <UserProvider>
+          {children}
+          <Toaster />
+        </UserProvider>
       </body>
     </html>
   )

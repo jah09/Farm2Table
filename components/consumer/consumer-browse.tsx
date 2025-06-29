@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Sparkles, LogOut, Search, ShoppingCart, Plus, Minus, Filter, X, Brain, Zap, History } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useCart } from "@/components/consumer/cart-context"
 import { useProduce } from "@/components/shared/produce-context"
+import { useUser } from "@/components/shared/user-context"
 import { Logo } from "@/components/shared/logo"
 
 interface SearchFilters {
@@ -46,7 +46,7 @@ function getUnit(unit: string | undefined): string {
 }
 
 export function ConsumerBrowse() {
-  const router = useRouter()
+  const { user, logout } = useUser()
   const { addToCart, cart, updateQuantity } = useCart()
   const { produces, searchProduce } = useProduce()
   
@@ -70,7 +70,7 @@ export function ConsumerBrowse() {
   const [sessionId, setSessionId] = useState("")
   const [conversationHistory, setConversationHistory] = useState<any[]>([])
   const [userContext, setUserContext] = useState({
-    location: "Manila",
+    location: user?.location || "Manila",
     preferences: ["organic", "local"],
     dietaryRestrictions: [],
     cookingSkill: "intermediate"
@@ -83,8 +83,18 @@ export function ConsumerBrowse() {
     }
   }, [sessionId])
 
+  // Update user context when user data changes
+  useEffect(() => {
+    if (user) {
+      setUserContext(prev => ({
+        ...prev,
+        location: user.location || "Manila"
+      }))
+    }
+  }, [user])
+
   // Get unique categories, farming methods, and seasons for filters
-  const categories = [...new Set(produces.map(p => p.category).filter(Boolean))]
+  const categories = [...new Set(produces.map(p => p.category).filter(Boolean))] as string[]
   const farmingMethods = ["Organic", "Hydroponic", "Biodynamic", "Conventional"]
   const seasons = ["Spring", "Summer", "Fall", "Winter", "Year-round"]
 
@@ -141,7 +151,8 @@ export function ConsumerBrowse() {
         body: JSON.stringify({ 
           question: aiQuestion,
           sessionId,
-          context: userContext
+          context: userContext,
+          userId: user?.id
         })
       })
 
@@ -199,22 +210,18 @@ export function ConsumerBrowse() {
   // Handle search input changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery.trim()) {
-        performSemanticSearch(searchQuery)
-      } else {
-        setSearchResults([])
-      }
+      performSemanticSearch(searchQuery)
     }, 300)
 
     return () => clearTimeout(timeoutId)
   }, [searchQuery])
 
   const handleLogout = () => {
-    router.push("/")
+    logout()
   }
 
   const getCartQuantity = (produceId: string) => {
-    const item = cart.find((item) => item.id === produceId)
+    const item = cart.find(item => item.id === produceId)
     return item ? item.quantity : 0
   }
 
@@ -224,13 +231,15 @@ export function ConsumerBrowse() {
       name: produce.name,
       price: produce.price,
       quantity: 1,
-      producer: produce.producer,
-      maxQuantity: produce.quantity,
+      unit: getUnit(produce.unit),
+      producer: produce.producer || "Unknown Producer",
+      maxQuantity: produce.quantity || 100
     })
   }
 
-  const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0)
-  const filteredResults = getFilteredResults()
+  if (!user) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
@@ -241,18 +250,20 @@ export function ConsumerBrowse() {
             <Logo size="md" showText={false} />
             <div>
               <h1 className="text-3xl font-bold text-green-800">Fresh Produce</h1>
-              <p className="text-green-600 mt-1">
-                Discover fresh, local produce ({filteredResults.length} items available)
-              </p>
+              <p className="text-green-600 mt-1">Welcome, {user.name}!</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <Button onClick={() => router.push("/consumer/cart")} className="bg-green-600 hover:bg-green-700 relative">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = '/consumer/cart'}
+              className="border-green-200 text-green-700 hover:bg-green-50 bg-transparent relative"
+            >
               <ShoppingCart className="w-4 h-4 mr-2" />
               Cart
-              {cartItemsCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[20px] h-5 flex items-center justify-center">
-                  {cartItemsCount}
+              {cart.length > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  {cart.reduce((total, item) => total + item.quantity, 0)}
                 </Badge>
               )}
             </Button>
@@ -267,181 +278,162 @@ export function ConsumerBrowse() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search by name, description, or ask naturally (e.g., 'good for juicing', 'organic vegetables')"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-green-200 focus:border-green-400"
-              />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                </div>
-              )}
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`border-green-200 text-green-700 hover:bg-green-50 ${showFilters ? 'bg-green-50' : ''}`}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-            </Button>
-            {searchQuery && (
-              <Button
-                variant="outline"
-                onClick={() => setSearchQuery("")}
-                className="border-green-200 text-green-700 hover:bg-green-50"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-
-          {/* Filters Panel */}
-          {showFilters && (
-            <Card className="mt-4 border-green-200">
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-green-800 mb-2 block">Category</label>
-                    <Select value={filters.category || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
-                      <SelectTrigger className="border-green-200">
-                        <SelectValue placeholder="All categories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All categories</SelectItem>
-                        {categories.filter((c): c is string => !!c).map(category => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-green-800 mb-2 block">Max Price: ₱{filters.maxPrice}</label>
-                    <Slider
-                      value={[filters.maxPrice]}
-                      onValueChange={([value]) => setFilters(prev => ({ ...prev, maxPrice: value }))}
-                      max={500}
-                      min={50}
-                      step={10}
-                      className="w-full"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-green-800 mb-2 block">Farming Method</label>
-                    <Select value={filters.farmingMethod || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, farmingMethod: value }))}>
-                      <SelectTrigger className="border-green-200">
-                        <SelectValue placeholder="All methods" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All methods</SelectItem>
-                        {farmingMethods.map(method => (
-                          <SelectItem key={method} value={method}>{method}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium text-green-800 mb-2 block">Season</label>
-                    <Select value={filters.season || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, season: value }))}>
-                      <SelectTrigger className="border-green-200">
-                        <SelectValue placeholder="All seasons" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All seasons</SelectItem>
-                        {seasons.map(season => (
-                          <SelectItem key={season} value={season}>{season}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-4">
-          {/* AI Assistant */}
-          <div className="lg:col-span-1">
-            <Card className="border-green-200 shadow-lg sticky top-4">
+        {/* Search and AI Assistant Section */}
+        <div className="grid gap-6 lg:grid-cols-3 mb-8">
+          {/* Search Section */}
+          <div className="lg:col-span-2">
+            <Card className="border-green-200 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-green-800 flex items-center">
-                  <Brain className="w-5 h-5 mr-2" />
-                  AI Assistant
+                <CardTitle className="text-green-800 flex items-center gap-2">
+                  <Search className="w-5 h-5" />
+                  Find Fresh Produce
                 </CardTitle>
-                <CardDescription>Ask me about the best produce for your needs!</CardDescription>
+                <CardDescription>
+                  Search for fresh, local produce from our network of farmers
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
+                <div className="flex gap-2">
                   <Input
-                    placeholder="e.g., What's good for juicing?"
+                    placeholder="Search for produce, recipes, or ask questions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 border-green-200 focus:border-green-400"
+                  />
+                  <Button
+                    onClick={() => setShowFilters(!showFilters)}
+                    variant="outline"
+                    className="border-green-200 text-green-700 hover:bg-green-50"
+                  >
+                    <Filter className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Filters */}
+                {showFilters && (
+                  <div className="grid gap-4 p-4 bg-green-50 rounded-lg">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <label className="text-sm font-medium text-green-700 mb-2 block">Category</label>
+                        <Select value={filters.category} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
+                          <SelectTrigger className="border-green-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {categories.map(category => (
+                              <SelectItem key={category} value={category}>{category}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-green-700 mb-2 block">Max Price: ₱{filters.maxPrice}</label>
+                        <Slider
+                          value={[filters.maxPrice]}
+                          onValueChange={(value) => setFilters(prev => ({ ...prev, maxPrice: value[0] }))}
+                          max={1000}
+                          min={50}
+                          step={50}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-green-700 mb-2 block">Farming Method</label>
+                        <Select value={filters.farmingMethod} onValueChange={(value) => setFilters(prev => ({ ...prev, farmingMethod: value }))}>
+                          <SelectTrigger className="border-green-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Methods</SelectItem>
+                            {farmingMethods.map(method => (
+                              <SelectItem key={method} value={method}>{method}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-green-700 mb-2 block">Season</label>
+                        <Select value={filters.season} onValueChange={(value) => setFilters(prev => ({ ...prev, season: value }))}>
+                          <SelectTrigger className="border-green-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Seasons</SelectItem>
+                            {seasons.map(season => (
+                              <SelectItem key={season} value={season}>{season}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Assistant */}
+          <div className="lg:col-span-1">
+            <Card className="border-green-200 shadow-lg h-fit">
+              <CardHeader>
+                <CardTitle className="text-green-800 flex items-center gap-2">
+                  <Brain className="w-5 h-5" />
+                  AI Assistant
+                </CardTitle>
+                <CardDescription>
+                  Ask for recommendations and cooking tips
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ask about produce, recipes..."
                     value={aiQuestion}
                     onChange={(e) => setAiQuestion(e.target.value)}
-                    className="border-green-200 focus:border-green-400"
-                    onKeyPress={(e) => e.key === "Enter" && handleAiQuestion()}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAiQuestion()}
+                    className="flex-1 border-green-200 focus:border-green-400"
+                    disabled={isAiLoading}
                   />
                   <Button
                     onClick={handleAiQuestion}
                     disabled={isAiLoading || !aiQuestion.trim()}
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700"
                   >
                     {isAiLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Thinking...
-                      </>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <>
-                        <Zap className="w-4 h-4 mr-2" />
-                        Ask AI
-                      </>
+                      <Zap className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
 
                 {aiResponse && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-green-800 mb-2 flex items-center">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Recommendation:
-                    </h4>
-                    <p className="text-sm text-green-700 mb-3">{aiResponse}</p>
-                    
-                    {aiRecommendations.length > 0 && (
-                      <div className="space-y-2">
-                        <h5 className="font-medium text-green-800 text-xs">Recommended Items:</h5>
-                        {aiRecommendations.slice(0, 3).map((item) => (
-                          <div key={item.id} className="bg-white rounded p-2 text-xs">
-                            <div className="font-medium text-green-800">{item.name}</div>
-                            <div className="text-green-600">₱{item.price}/{getUnit(item.unit)} • {item.producer}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-800">{aiResponse}</p>
                   </div>
                 )}
 
-                {/* Conversation History */}
-                {conversationHistory.length > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <h5 className="font-medium text-blue-800 text-xs mb-2 flex items-center">
-                      <History className="w-3 h-3 mr-1" />
-                      Recent Questions:
-                    </h5>
-                    <div className="space-y-1">
-                      {conversationHistory.slice(0, 2).map((conv, index) => (
-                        <div key={index} className="text-xs text-blue-700 bg-white rounded p-1">
-                          "{conv.question}"
+                {aiRecommendations.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-green-700 mb-2">Recommended for you:</h4>
+                    <div className="space-y-2">
+                      {aiRecommendations.slice(0, 3).map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-2 bg-white rounded border border-green-100">
+                          <div>
+                            <p className="text-sm font-medium text-green-800">{item.name}</p>
+                            <p className="text-xs text-green-600">₱{item.price}/{getUnit(item.unit)}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleAddToCart(item)}
+                            className="bg-green-600 hover:bg-green-700 text-xs"
+                          >
+                            Add
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -450,115 +442,121 @@ export function ConsumerBrowse() {
               </CardContent>
             </Card>
           </div>
+        </div>
 
-          {/* Produce Grid */}
-          <div className="lg:col-span-3">
-            {filteredResults.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-green-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-green-800 mb-2">
-                  {searchQuery ? 'No matching produce found' : 'No produce available'}
-                </h2>
+        {/* Results Section */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-green-800">
+              {searchQuery ? `Search Results for "${searchQuery}"` : "Available Produce"}
+            </h2>
+            <p className="text-green-600">
+              {getFilteredResults().length} items found
+            </p>
+          </div>
+
+          {isSearching ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="border-green-200">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="h-4 bg-green-100 rounded animate-pulse" />
+                      <div className="h-3 bg-green-50 rounded animate-pulse" />
+                      <div className="h-3 bg-green-50 rounded w-2/3 animate-pulse" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : getFilteredResults().length === 0 ? (
+            <Card className="border-green-200">
+              <CardContent className="p-8 text-center">
+                <Search className="w-12 h-12 text-green-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-green-800 mb-2">No produce found</h3>
                 <p className="text-green-600">
                   {searchQuery 
-                    ? 'Try adjusting your search terms or filters' 
-                    : 'Check back later for fresh produce from local farmers!'
+                    ? `No items match "${searchQuery}". Try adjusting your search or filters.`
+                    : "No produce available at the moment. Check back soon!"
                   }
                 </p>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {filteredResults.map((produce) => {
-                  const cartQuantity = getCartQuantity(produce.id)
-                  return (
-                    <Card key={produce.id} className="border-green-200 shadow-lg hover:shadow-xl transition-shadow">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-green-800">{produce.name}</CardTitle>
-                          <div className="text-right">
-                            <Badge className="bg-green-600 hover:bg-green-700">₱{produce.price}/{getUnit(produce.unit)}</Badge>
-                            {produce.similarity && produce.similarity < 1 && (
-                              <div className="text-xs text-green-600 mt-1">
-                                {Math.round(produce.similarity * 100)}% match
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <CardDescription className="text-sm text-gray-600">by {produce.producer}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-gray-700 mb-4 text-sm">{produce.description}</p>
-                        
-                        {/* Additional details */}
-                        <div className="space-y-2 mb-4">
-                          <div className="flex justify-between items-center">
-                            <Badge variant="outline" className="border-green-200 text-green-700">
-                              {produce.quantity}{getUnit(produce.unit)} available
-                            </Badge>
-                            <Badge variant="secondary" className="bg-green-50 text-green-700 text-xs">
-                              Added: {produce.dateAdded}
-                            </Badge>
-                          </div>
-                          
-                          {produce.farmingMethod && (
-                            <Badge variant="outline" className="border-blue-200 text-blue-700 text-xs">
-                              {produce.farmingMethod}
-                            </Badge>
-                          )}
-                          
-                          {produce.season && (
-                            <Badge variant="outline" className="border-orange-200 text-orange-700 text-xs">
-                              {produce.season}
-                            </Badge>
-                          )}
-                        </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {getFilteredResults().map((produce) => (
+                <Card key={produce.id} className="border-green-200 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-green-800 mb-1">{produce.name}</h3>
+                        <p className="text-sm text-green-600 line-clamp-2">{produce.description}</p>
+                      </div>
+                      {produce.similarity && produce.similarity < 1 && (
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          {Math.round(produce.similarity * 100)}% match
+                        </Badge>
+                      )}
+                    </div>
 
-                        {cartQuantity === 0 ? (
-                          <Button
-                            onClick={() => handleAddToCart(produce)}
-                            className="w-full bg-green-600 hover:bg-green-700"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add to Cart
-                          </Button>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateQuantity(produce.id, cartQuantity - 1)}
-                                className="border-green-200 text-green-700 hover:bg-green-50"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </Button>
-                              <span className="font-semibold text-green-800 min-w-[2rem] text-center">
-                                {cartQuantity}{getUnit(produce.unit)}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateQuantity(produce.id, cartQuantity + 1)}
-                                disabled={cartQuantity >= produce.quantity}
-                                className="border-green-200 text-green-700 hover:bg-green-50"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              In Cart
-                            </Badge>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                        ₱{produce.price}/{getUnit(produce.unit)}
+                      </Badge>
+                      {produce.category && (
+                        <Badge variant="outline" className="border-blue-200 text-blue-700 text-xs">
+                          {produce.category}
+                        </Badge>
+                      )}
+                      {produce.farmingMethod && (
+                        <Badge variant="outline" className="border-purple-200 text-purple-700 text-xs">
+                          {produce.farmingMethod}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-green-600">
+                        <p>From: {produce.producer}</p>
+                        {produce.location && <p>📍 {produce.location}</p>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getCartQuantity(produce.id) > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateQuantity(produce.id, getCartQuantity(produce.id) - 1)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="text-sm font-medium w-6 text-center">{getCartQuantity(produce.id)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateQuantity(produce.id, getCartQuantity(produce.id) + 1)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddToCart(produce)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {getCartQuantity(produce.id) > 0 ? "Add More" : "Add to Cart"}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ interface CartItem {
   quantity: number
   producer: string
   maxQuantity: number
+  unit: string
 }
 
 interface CartContextType {

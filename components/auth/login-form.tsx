@@ -9,39 +9,27 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useRouter } from "next/navigation"
-import { graphqlRequest, CREATE_USER_MUTATION, LOGIN_USER_MUTATION } from "@/lib/graphql-client"
-import { toast } from "sonner"
+import { useUser } from "@/components/shared/user-context"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
-  const [role, setRole] = useState<"producer" | "consumer">("consumer")
+  const [role, setRole] = useState<"PRODUCER" | "CONSUMER">("CONSUMER")
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const { login, register } = useUser()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     
     try {
-      // Use login mutation with email and password
-      const data = await graphqlRequest(LOGIN_USER_MUTATION, { email, password })
-      
-      if (data.loginUser && data.loginUser.user) {
-        toast.success("Login successful!")
-        
-        // Redirect based on role
-        if (data.loginUser.user.role === "PRODUCER") {
-          router.push("/producer/dashboard")
-        } else {
-          router.push("/consumer/browse")
-        }
+      const success = await login(email, password)
+      if (success) {
+        // Redirect will be handled by the user context
       }
     } catch (error) {
       console.error("Login error:", error)
-      toast.error("Login failed. Please check your email and password.")
     } finally {
       setIsLoading(false)
     }
@@ -52,34 +40,24 @@ export function LoginForm() {
     setIsLoading(true)
     
     try {
-      // Create user with GraphQL mutation
-      const userInput = {
+      const userData = {
         email,
-        password, // In a real app, this should be hashed
+        password,
         name,
-        role: role.toUpperCase(),
-        ...(role === "producer" && {
+        role,
+        ...(role === "PRODUCER" && {
           farmName: name + "'s Farm",
           location: "TBD",
           farmingMethod: "Organic"
         })
       }
       
-      const data = await graphqlRequest(CREATE_USER_MUTATION, { input: userInput })
-      
-      if (data.createUser) {
-        toast.success("Registration successful!")
-        
-        // Redirect based on role
-        if (role === "producer") {
-          router.push("/producer/dashboard")
-        } else {
-          router.push("/consumer/browse")
-        }
+      const success = await register(userData)
+      if (success) {
+        // Redirect will be handled by the user context
       }
     } catch (error) {
       console.error("Registration error:", error)
-      toast.error("Registration failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -175,13 +153,13 @@ export function LoginForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="reg-role">I am a</Label>
-                <Select value={role} onValueChange={(value: "producer" | "consumer") => setRole(value)} disabled={isLoading}>
+                <Select value={role} onValueChange={(value: "PRODUCER" | "CONSUMER") => setRole(value)} disabled={isLoading}>
                   <SelectTrigger className="border-green-200 focus:border-green-400">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="consumer">Consumer</SelectItem>
-                    <SelectItem value="producer">Producer (Farmer)</SelectItem>
+                    <SelectItem value="CONSUMER">Consumer</SelectItem>
+                    <SelectItem value="PRODUCER">Producer (Farmer)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

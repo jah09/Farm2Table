@@ -49,6 +49,7 @@ const typeDefs = `
     farmName: String
     location: String
     farmingMethod: String
+    password: String
     createdAt: String!
     updatedAt: String!
     produces: [Produce!]!
@@ -242,7 +243,13 @@ const typeDefs = `
 const resolvers = {
   ObjectId: ObjectIdScalar,
   Query: {
-    users: () => prisma.user.findMany(),
+    users: async () => {
+      return await prisma.user.findMany({
+        include: {
+          produces: true,
+        },
+      })
+    },
     user: (_: any, { id }: { id: string }) =>
       prisma.user.findUnique({
         where: { id },

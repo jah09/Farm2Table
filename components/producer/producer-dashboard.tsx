@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trash2, Edit, LogOut, Sparkles, MapPin, Calendar, Leaf, BarChart3, TrendingUp, MessageSquare, Search } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useProduce } from "@/components/shared/produce-context"
+import { useUser } from "@/components/shared/user-context"
 import { Logo } from "@/components/shared/logo"
 import { EnhancedProduceForm } from "./enhanced-produce-form"
 import { PricingAssistant } from "./pricing-assistant"
@@ -17,21 +17,21 @@ import { KnowledgeBaseManager } from "./knowledge-base-manager"
 import { ConversationAnalytics } from "./conversation-analytics"
 
 export function ProducerDashboard() {
-  const router = useRouter()
+  const { user, logout } = useUser()
   const { produces, addProduce, deleteProduce } = useProduce()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null)
 
-  // Mock current producer - in real app, this would come from auth
-  const currentProducer = "Juan Dela Cruz Farm"
+  // Use real user data instead of mock
+  const currentProducer = user?.farmName || user?.name || "Unknown Farm"
   const myProduces = produces.filter((p) => p.producer === currentProducer)
 
   // Form state for pricing assistant
   const [formData, setFormData] = useState({
     name: "",
     category: "",
-    location: "Benguet, Philippines",
-    farmingMethod: "Organic",
+    location: user?.location || "TBD",
+    farmingMethod: user?.farmingMethod || "Organic",
     season: "Summer",
     quantity: 50,
   })
@@ -89,11 +89,15 @@ export function ProducerDashboard() {
   }
 
   const handleLogout = () => {
-    router.push("/")
+    logout()
   }
 
   const handleFormChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
@@ -105,7 +109,10 @@ export function ProducerDashboard() {
             <Logo size="md" showText={false} />
             <div>
               <h1 className="text-3xl font-bold text-green-800">Producer Dashboard</h1>
-              <p className="text-green-600 mt-1">Welcome back, Juan Dela Cruz!</p>
+              <p className="text-green-600 mt-1">Welcome back, {user.name}!</p>
+              {user.farmName && (
+                <p className="text-green-500 text-sm">{user.farmName}</p>
+              )}
             </div>
           </div>
           <Button
@@ -198,95 +205,50 @@ export function ProducerDashboard() {
                 <Card className="border-green-200 shadow-lg">
                   <CardHeader>
                     <CardTitle className="text-green-800">Your Produce Listings</CardTitle>
-                    <CardDescription>Manage your current listings ({myProduces.length} items)</CardDescription>
+                    <CardDescription>
+                      Manage your current produce listings and track performance
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {myProduces.length === 0 ? (
-                        <div className="col-span-full text-center py-8">
-                          <p className="text-gray-500">No produce listed yet</p>
-                        </div>
-                      ) : (
-                        myProduces.map((produce) => (
-                          <div key={produce.id} className="border border-green-100 rounded-lg p-4 bg-white">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2">
+                    {myProduces.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Leaf className="w-12 h-12 text-green-300 mx-auto mb-4" />
+                        <p className="text-green-600">No produce listings yet</p>
+                        <p className="text-green-500 text-sm">Add your first produce to get started</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {myProduces.map((produce) => (
+                          <Card key={produce.id} className="border-green-100">
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start mb-2">
                                 <h3 className="font-semibold text-green-800">{produce.name}</h3>
-                                {produce.aiGenerated && (
-                                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">
-                                    <Sparkles className="w-3 h-3 mr-1" />
-                                    AI
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="ghost" className="text-green-600 hover:text-green-700">
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-red-600 hover:text-red-700"
-                                  onClick={() => handleDeleteProduce(produce.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                ₱{produce.price}/{produce.unit || "kg"}
-                              </Badge>
-                              <Badge variant="outline" className="border-green-200 text-green-700 text-xs">
-                                {produce.quantity}
-                                {produce.unit || "kg"}
-                              </Badge>
-                              {produce.category && (
-                                <Badge variant="outline" className="border-blue-200 text-blue-700 text-xs">
-                                  {produce.category}
-                                </Badge>
-                              )}
-                              {produce.farmingMethod && (
-                                <Badge variant="outline" className="border-purple-200 text-purple-700 text-xs">
-                                  <Leaf className="w-3 h-3 mr-1" />
+                                <Badge variant="secondary" className="text-xs">
                                   {produce.farmingMethod}
                                 </Badge>
-                              )}
-                            </div>
-
-                            {produce.season && (
-                              <div className="flex items-center gap-1 mb-2">
-                                <Calendar className="w-3 h-3 text-gray-500" />
-                                <span className="text-xs text-gray-600">{produce.season}</span>
                               </div>
-                            )}
-
-                            {produce.location && (
-                              <div className="flex items-center gap-1 mb-2">
-                                <MapPin className="w-3 h-3 text-gray-500" />
-                                <span className="text-xs text-gray-600">{produce.location}</span>
-                              </div>
-                            )}
-
-                            {produce.nutritionalHighlights && produce.nutritionalHighlights.length > 0 && (
-                              <div className="mb-2">
-                                <div className="flex flex-wrap gap-1">
-                                  {produce.nutritionalHighlights.slice(0, 2).map((highlight, index) => (
-                                    <Badge key={index} variant="secondary" className="bg-blue-50 text-blue-700 text-xs">
-                                      {highlight}
-                                    </Badge>
-                                  ))}
+                              <p className="text-sm text-green-600 mb-2">{produce.description}</p>
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-green-700">₱{produce.price}/{produce.unit}</span>
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                    onClick={() => handleDeleteProduce(produce.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
                                 </div>
                               </div>
-                            )}
-
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{produce.description}</p>
-                            <p className="text-xs text-gray-500">Added: {produce.dateAdded}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
