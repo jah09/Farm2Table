@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -12,9 +12,6 @@ import { Logo } from "@/components/shared/logo"
 import { EnhancedProduceForm } from "./enhanced-produce-form"
 import { PricingAssistant } from "./pricing-assistant"
 import { MarketTrendsDashboard } from "./market-trends-dashboard"
-import { DetailedMarketAnalysis } from "./detailed-market-analysis"
-import { KnowledgeBaseManager } from "./knowledge-base-manager"
-import { ConversationAnalytics } from "./conversation-analytics"
 
 export function ProducerDashboard() {
   const { user, logout } = useUser()
@@ -34,67 +31,44 @@ export function ProducerDashboard() {
     farmingMethod: user?.farmingMethod || "Organic",
     season: "Summer",
     quantity: 50,
-  })
+  });
 
   const handleAddProduce = async (produceData: any) => {
-    setIsSubmitting(true)
-
+    setIsSubmitting(true);
     try {
-      // Use selected price from pricing assistant if available
-      const finalPrice = selectedPrice || produceData.price
-
-      // Simulate AI processing time
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-
-      // Generate rich AI description based on all the context
-      const contextParts = [
-        produceData.farmingMethod && `${produceData.farmingMethod}`,
-        produceData.name,
-        produceData.location && `from ${produceData.location}`,
-        produceData.season && `(${produceData.season} harvest)`,
-      ].filter(Boolean)
-
-      const aiDescription = `${contextParts.join(" ")} - ${
-        produceData.nutritionalHighlights?.length
-          ? `Rich in ${produceData.nutritionalHighlights.slice(0, 2).join(" and ")}.`
-          : "Packed with natural goodness."
-      } ${
-        produceData.commonUses?.length
-          ? `Perfect for ${produceData.commonUses.slice(0, 2).join(" and ")}.`
-          : "Versatile for all your culinary needs."
-      } Hand-picked at peak freshness for maximum flavor and nutrition. ${
-        produceData.storageInstructions ? `Best stored ${produceData.storageInstructions.toLowerCase()}.` : ""
-      }`
-
-      addProduce({
+      const payload = {
         ...produceData,
-        price: finalPrice,
-        description: aiDescription,
-        producer: currentProducer,
-        aiGenerated: true,
-        unit: "kg",
-      })
+        producerId: user?.id,
+      };
 
-      // Reset selected price
-      setSelectedPrice(null)
+      const response = await fetch("/api/produce", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to save produce");
+      const savedProduce = await response.json();
+      console.log(JSON.stringify(savedProduce,null ,2))
+      setSelectedPrice(null);
     } catch (error) {
-      console.error("Error adding produce:", error)
+      console.error("Error adding produce:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
-
+  };
+  // ...existing code...
   const handleDeleteProduce = (id: string) => {
-    deleteProduce(id)
-  }
+    deleteProduce(id);
+  };
 
   const handleLogout = () => {
     logout()
   }
 
   const handleFormChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   if (!user) {
     return null
@@ -127,16 +101,22 @@ export function ProducerDashboard() {
 
         {/* Dashboard Tabs */}
         <Tabs defaultValue="add-produce" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="add-produce" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Add Produce
             </TabsTrigger>
-            <TabsTrigger value="market-trends" className="flex items-center gap-2">
+            <TabsTrigger
+              value="market-trends"
+              className="flex items-center gap-2"
+            >
               <TrendingUp className="w-4 h-4" />
               Market Trends
             </TabsTrigger>
-            <TabsTrigger value="my-listings" className="flex items-center gap-2">
+            <TabsTrigger
+              value="my-listings"
+              className="flex items-center gap-2"
+            >
               <BarChart3 className="w-4 h-4" />
               My Listings
             </TabsTrigger>
@@ -145,7 +125,7 @@ export function ProducerDashboard() {
               Knowledge Base
             </TabsTrigger>
             <TabsTrigger value="conversations" className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
+              {/* <MessageSquare className="w-4 h-4" /> */}
               Conversations
             </TabsTrigger>
           </TabsList>
@@ -155,7 +135,10 @@ export function ProducerDashboard() {
             <div className="grid gap-8 lg:grid-cols-3">
               {/* Enhanced Add Produce Form */}
               <div className="lg:col-span-2">
-                <EnhancedProduceForm onSubmit={handleAddProduce} isSubmitting={isSubmitting} />
+                <EnhancedProduceForm
+                  onSubmit={handleAddProduce}
+                  isSubmitting={isSubmitting}
+                />
               </div>
 
               {/* Smart Pricing Assistant */}
@@ -182,7 +165,7 @@ export function ProducerDashboard() {
                   Market Overview
                 </TabsTrigger>
                 <TabsTrigger value="detailed" className="flex items-center gap-2">
-                  <Search className="w-4 h-4" />
+                  {/* <Search className="w-4 h-4" /> */}
                   Detailed Analysis
                 </TabsTrigger>
               </TabsList>
@@ -192,7 +175,7 @@ export function ProducerDashboard() {
               </TabsContent>
 
               <TabsContent value="detailed">
-                <DetailedMarketAnalysis />
+                {/* <DetailedMarketAnalysis /> */}
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -257,15 +240,15 @@ export function ProducerDashboard() {
 
           {/* Knowledge Base Tab */}
           <TabsContent value="knowledge-base">
-            <KnowledgeBaseManager />
+            {/* <KnowledgeBaseManager /> */}
           </TabsContent>
 
           {/* Conversations Tab */}
           <TabsContent value="conversations">
-            <ConversationAnalytics />
+            {/* <ConversationAnalytics /> */}
           </TabsContent>
         </Tabs>
       </div>
     </div>
-  )
+  );
 }

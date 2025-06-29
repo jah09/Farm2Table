@@ -90,7 +90,7 @@ export function ConversationAnalytics() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-green-800 flex items-center">
-            <MessageSquare className="w-6 h-6 mr-2" />
+            {/* <MessageSquare className="w-6 h-6 mr-2" /> */}
             AI Conversation Analytics
           </h2>
           <p className="text-green-600 mt-1">
@@ -120,7 +120,7 @@ export function ConversationAnalytics() {
                   {isLoading ? "..." : analytics.totalConversations.toLocaleString()}
                 </p>
               </div>
-              <MessageSquare className="w-8 h-8 text-green-400" />
+              {/* <MessageSquare className="w-8 h-8 text-green-400" /> */}
             </div>
           </CardContent>
         </Card>
