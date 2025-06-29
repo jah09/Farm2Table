@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Sparkles, LogOut, Search, ShoppingCart, Plus, Minus, Filter, X, Brain, Zap } from "lucide-react"
+import { Sparkles, LogOut, Search, ShoppingCart, Plus, Minus, Filter, X, Brain, Zap, History } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/components/consumer/cart-context"
 import { useProduce } from "@/components/shared/produce-context"
@@ -67,6 +67,21 @@ export function ConsumerBrowse() {
   const [aiResponse, setAiResponse] = useState("")
   const [aiRecommendations, setAiRecommendations] = useState<SearchResult[]>([])
   const [isAiLoading, setIsAiLoading] = useState(false)
+  const [sessionId, setSessionId] = useState("")
+  const [conversationHistory, setConversationHistory] = useState<any[]>([])
+  const [userContext, setUserContext] = useState({
+    location: "Manila",
+    preferences: ["organic", "local"],
+    dietaryRestrictions: [],
+    cookingSkill: "intermediate"
+  })
+
+  // Initialize session ID on component mount
+  useEffect(() => {
+    if (!sessionId) {
+      setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+    }
+  }, [sessionId])
 
   // Get unique categories, farming methods, and seasons for filters
   const categories = [...new Set(produces.map(p => p.category).filter(Boolean))]
@@ -114,7 +129,7 @@ export function ConsumerBrowse() {
     }
   }
 
-  // Handle AI recommendations
+  // Handle AI recommendations with enhanced context
   const handleAiQuestion = async () => {
     if (!aiQuestion.trim()) return
 
@@ -125,7 +140,8 @@ export function ConsumerBrowse() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           question: aiQuestion,
-          userId: 'consumer' // In real app, get from auth context
+          sessionId,
+          context: userContext
         })
       })
 
@@ -133,6 +149,7 @@ export function ConsumerBrowse() {
         const data = await response.json()
         setAiResponse(data.response)
         setAiRecommendations(data.recommendations || [])
+        setConversationHistory(data.conversationHistory || [])
       } else {
         // Fallback to mock response
         setTimeout(() => {
@@ -411,6 +428,23 @@ export function ConsumerBrowse() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Conversation History */}
+                {conversationHistory.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <h5 className="font-medium text-blue-800 text-xs mb-2 flex items-center">
+                      <History className="w-3 h-3 mr-1" />
+                      Recent Questions:
+                    </h5>
+                    <div className="space-y-1">
+                      {conversationHistory.slice(0, 2).map((conv, index) => (
+                        <div key={index} className="text-xs text-blue-700 bg-white rounded p-1">
+                          "{conv.question}"
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>

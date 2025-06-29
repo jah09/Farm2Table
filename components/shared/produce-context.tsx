@@ -14,6 +14,16 @@ export interface Produce {
   category?: string
   aiGenerated?: boolean
   unit?: string
+  // Enhanced fields
+  subCategory?: string
+  season?: string
+  farmingMethod?: string
+  location?: string
+  nutritionalHighlights?: string[]
+  commonUses?: string[]
+  preparationTips?: string
+  storageInstructions?: string
+  shelfLife?: string
 }
 
 interface ProduceContextType {
@@ -50,6 +60,14 @@ export function ProduceProvider({ children }: { children: React.ReactNode }) {
           category: "Vegetables",
           aiGenerated: true,
           unit: "kg",
+          subCategory: "Cherry",
+          season: "Summer",
+          farmingMethod: "Organic",
+          location: "Benguet, Philippines",
+          nutritionalHighlights: ["Vitamin C", "Lycopene", "Antioxidants"],
+          commonUses: ["Salads", "Cooking", "Fresh eating"],
+          storageInstructions: "Store at room temperature until ripe, then refrigerate",
+          shelfLife: "5-7 days",
         },
         {
           id: "2",
@@ -63,6 +81,14 @@ export function ProduceProvider({ children }: { children: React.ReactNode }) {
           category: "Leafy Greens",
           aiGenerated: true,
           unit: "kg",
+          subCategory: "Romaine",
+          season: "Spring",
+          farmingMethod: "Organic",
+          location: "Benguet, Philippines",
+          nutritionalHighlights: ["Vitamin A", "Folate", "Fiber"],
+          commonUses: ["Salads", "Sandwiches", "Wraps"],
+          storageInstructions: "Refrigerate in plastic bag",
+          shelfLife: "3-5 days",
         },
         {
           id: "3",
@@ -76,6 +102,14 @@ export function ProduceProvider({ children }: { children: React.ReactNode }) {
           category: "Root Vegetables",
           aiGenerated: true,
           unit: "kg",
+          subCategory: "Orange",
+          season: "Fall",
+          farmingMethod: "Hydroponic",
+          location: "Laguna, Philippines",
+          nutritionalHighlights: ["Beta-carotene", "Vitamin A", "Fiber"],
+          commonUses: ["Juicing", "Roasting", "Cooking"],
+          storageInstructions: "Refrigerate in plastic bag",
+          shelfLife: "2-3 weeks",
         },
         {
           id: "4",
@@ -89,6 +123,14 @@ export function ProduceProvider({ children }: { children: React.ReactNode }) {
           category: "Leafy Greens",
           aiGenerated: true,
           unit: "kg",
+          subCategory: "Baby",
+          season: "Spring",
+          farmingMethod: "Organic",
+          location: "Cebu, Philippines",
+          nutritionalHighlights: ["Iron", "Vitamin A", "Folate"],
+          commonUses: ["Smoothies", "Salads", "Sautéing"],
+          storageInstructions: "Refrigerate immediately",
+          shelfLife: "3-5 days",
         },
       ]
       setProduces(initialProduces)

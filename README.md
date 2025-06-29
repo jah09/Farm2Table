@@ -1,12 +1,15 @@
 # Farm2Table MVP
 
-A modern farm-to-table marketplace connecting local producers with consumers.
+A modern farm-to-table marketplace connecting local producers with consumers, featuring AI-powered recommendations and intelligent conversation management.
 
 ## Features
 
 - 🌱 Producer dashboard for managing produce listings
 - 🛒 Consumer marketplace with AI-powered recommendations
 - 🤖 OpenAI integration for intelligent produce suggestions
+- 💬 AI conversation storage and analytics
+- 📚 Knowledge base management with embeddings
+- 🔍 Semantic search with vector embeddings
 - 📱 Mobile-friendly responsive design
 - 🔐 Secure authentication with JWT
 - 💾 MongoDB database with Prisma ORM
@@ -17,7 +20,7 @@ A modern farm-to-table marketplace connecting local producers with consumers.
 - **Backend**: Next.js API Routes, Prisma ORM
 - **Database**: MongoDB
 - **Authentication**: JWT with bcrypt
-- **AI**: OpenAI GPT-3.5-turbo
+- **AI**: OpenAI GPT-3.5-turbo, text-embedding-3-small
 - **UI Components**: shadcn/ui, Radix UI
 
 ## Getting Started
@@ -61,6 +64,9 @@ npm run db:push
 
 # Seed with sample data
 npm run db:seed
+
+# Seed knowledge base
+npm run db:seed-knowledge
 \`\`\`
 
 5. Start the development server
@@ -86,10 +92,31 @@ After seeding, you can use these accounts:
 The application uses the following main models:
 
 - **User**: Stores user accounts (producers and consumers)
-- **Produce**: Product listings from producers
+- **Produce**: Product listings from producers with AI-generated descriptions and embeddings
 - **Order**: Customer orders
 - **OrderItem**: Individual items within orders
-- **AIConversation**: Logs of AI assistant interactions
+- **AIConversation**: Enhanced conversation logs with context and metadata
+- **KnowledgeBase**: Structured knowledge entries with embeddings for AI responses
+
+## AI Features
+
+### Conversation Management
+- **Session-based conversations**: Track user interactions across sessions
+- **Context awareness**: AI considers user preferences, location, and conversation history
+- **Metadata tracking**: Store response times, recommended categories, and user interactions
+- **Analytics**: View conversation insights, popular questions, and user engagement
+
+### Knowledge Base
+- **Semantic search**: Find relevant knowledge using vector embeddings
+- **Category organization**: Organize knowledge by farming, nutrition, recipes, storage, etc.
+- **Tag system**: Flexible tagging for better categorization
+- **Producer management**: Producers can add and manage knowledge entries
+
+### Enhanced Recommendations
+- **Semantic similarity**: Find produce using natural language queries
+- **Context-aware suggestions**: Consider user location, season, and preferences
+- **Knowledge integration**: AI responses include relevant farming and nutrition information
+- **Real-time learning**: System improves recommendations based on conversation patterns
 
 ## API Endpoints
 
@@ -102,7 +129,10 @@ The application uses the following main models:
 - `POST /api/produce` - Create new produce (producers only)
 
 ### AI Assistant
-- `POST /api/ai/recommend` - Get AI recommendations
+- `POST /api/ai/recommend` - Get AI recommendations with context
+- `GET /api/conversations` - Get conversation history
+- `GET /api/knowledge` - Search knowledge base
+- `POST /api/knowledge` - Create knowledge entry
 
 ## Development
 
@@ -115,6 +145,7 @@ npm run db:studio
 # Reset database and reseed
 npm run db:push --force-reset
 npm run db:seed
+npm run db:seed-knowledge
 \`\`\`
 
 ### Project Structure
@@ -122,6 +153,9 @@ npm run db:seed
 \`\`\`
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
+│   │   ├── ai/           # AI recommendation endpoints
+│   │   ├── conversations/ # Conversation history
+│   │   └── knowledge/    # Knowledge base management
 │   ├── consumer/          # Consumer pages
 │   ├── producer/          # Producer pages
 │   └── globals.css        # Global styles
@@ -129,15 +163,34 @@ npm run db:seed
 │   ├── auth/             # Authentication components
 │   ├── consumer/         # Consumer-specific components
 │   ├── producer/         # Producer-specific components
+│   │   ├── knowledge-base-manager.tsx    # Knowledge base management
+│   │   └── conversation-analytics.tsx    # Conversation insights
 │   ├── shared/           # Shared components
 │   └── ui/               # UI components (shadcn)
 ├── lib/                  # Utility libraries
 │   ├── auth.ts           # Authentication utilities
-│   ├── openai.ts         # OpenAI integration
+│   ├── openai.ts         # OpenAI integration with conversation management
+│   ├── embeddings.ts     # Vector embedding utilities
 │   └── prisma.ts         # Prisma client
 ├── prisma/               # Database schema and migrations
+│   ├── seed.ts           # Sample produce data
+│   └── seed-knowledge.ts # Knowledge base seeding
 └── public/               # Static assets
 \`\`\`
+
+## AI Conversation Features
+
+### For Consumers
+- **Natural language queries**: Ask questions like "What's good for juicing?"
+- **Contextual responses**: AI remembers your preferences and previous questions
+- **Semantic search**: Find produce using natural descriptions
+- **Personalized recommendations**: Based on location, season, and dietary preferences
+
+### For Producers
+- **Knowledge management**: Add farming tips, nutrition info, and recipes
+- **Conversation analytics**: See what customers are asking about
+- **Market insights**: Understand customer preferences and trends
+- **AI-enhanced listings**: Automatically generate rich product descriptions
 
 ## Deployment
 
@@ -145,7 +198,7 @@ npm run db:seed
 2. Deploy to Vercel or your preferred platform
 3. Set environment variables in your deployment platform
 4. Run database migrations: `npm run db:push`
-5. Optionally seed with sample data: `npm run db:seed`
+5. Seed with sample data: `npm run db:seed && npm run db:seed-knowledge`
 
 ## Contributing
 

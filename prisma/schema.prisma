@@ -121,9 +121,27 @@ model AIConversation {
   question  String
   response  String
   userId    String?  @db.ObjectId
+  sessionId String?  // For grouping related conversations
+  context   String?  // JSON string with conversation context
+  metadata  String?  // JSON string with additional metadata
   createdAt DateTime @default(now())
 
   @@map("ai_conversations")
+}
+
+model KnowledgeBase {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String
+  category    String   // "produce", "farming", "nutrition", "recipes", "general"
+  tags        String[] // For better categorization
+  embedding   Float[]  // Vector embedding of content
+  embeddingModel String @default("text-embedding-3-small")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("knowledge_base")
 }
 
 enum UserRole {

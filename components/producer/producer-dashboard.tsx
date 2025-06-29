@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trash2, Edit, LogOut, Sparkles, MapPin, Calendar, Leaf, BarChart3, TrendingUp } from "lucide-react"
+import { Trash2, Edit, LogOut, Sparkles, MapPin, Calendar, Leaf, BarChart3, TrendingUp, MessageSquare } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useProduce } from "@/components/shared/produce-context"
 import { Logo } from "@/components/shared/logo"
 import { EnhancedProduceForm } from "./enhanced-produce-form"
 import { PricingAssistant } from "./pricing-assistant"
 import { MarketTrendsDashboard } from "./market-trends-dashboard"
+import { KnowledgeBaseManager } from "./knowledge-base-manager"
+import { ConversationAnalytics } from "./conversation-analytics"
 
 export function ProducerDashboard() {
   const router = useRouter()
@@ -117,7 +119,7 @@ export function ProducerDashboard() {
 
         {/* Dashboard Tabs */}
         <Tabs defaultValue="add-produce" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
             <TabsTrigger value="add-produce" className="flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Add Produce
@@ -129,6 +131,14 @@ export function ProducerDashboard() {
             <TabsTrigger value="my-listings" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               My Listings
+            </TabsTrigger>
+            <TabsTrigger value="knowledge-base" className="flex items-center gap-2">
+              <Leaf className="w-4 h-4" />
+              Knowledge Base
+            </TabsTrigger>
+            <TabsTrigger value="conversations" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Conversations
             </TabsTrigger>
           </TabsList>
 
@@ -261,6 +271,16 @@ export function ProducerDashboard() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Knowledge Base Tab */}
+          <TabsContent value="knowledge-base">
+            <KnowledgeBaseManager />
+          </TabsContent>
+
+          {/* Conversations Tab */}
+          <TabsContent value="conversations">
+            <ConversationAnalytics />
           </TabsContent>
         </Tabs>
       </div>

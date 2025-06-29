@@ -12,7 +12,7 @@ dependencies:
     specifier: ^3.9.1
     version: 3.9.1(react-hook-form@7.54.1)
   '@prisma/client':
-    specifier: latest
+    specifier: ^6.10.1
     version: 6.10.1(prisma@6.10.1)(typescript@5.0.2)
   '@radix-ui/react-accordion':
     specifier: 1.2.2
@@ -111,8 +111,8 @@ dependencies:
     specifier: 1.0.4
     version: 1.0.4(@types/react-dom@18.0.0)(@types/react@18.0.0)(react-dom@18.0.0)(react@18.0.0)
   date-fns:
-    specifier: 4.1.0
-    version: 4.1.0
+    specifier: ^3.6.0
+    version: 3.6.0
   embla-carousel-react:
     specifier: 8.5.1
     version: 8.5.1(react@18.0.0)
@@ -126,7 +126,7 @@ dependencies:
     specifier: 1.4.1
     version: 1.4.1(react-dom@18.0.0)(react@18.0.0)
   jsonwebtoken:
-    specifier: latest
+    specifier: ^9.0.2
     version: 9.0.2
   lucide-react:
     specifier: ^0.454.0
@@ -140,15 +140,12 @@ dependencies:
   openai:
     specifier: latest
     version: 5.8.2(ws@8.18.3)(zod@3.24.1)
-  prisma:
-    specifier: latest
-    version: 6.10.1(typescript@5.0.2)
   react:
     specifier: ^18
     version: 18.0.0
   react-day-picker:
     specifier: 8.10.1
-    version: 8.10.1(date-fns@4.1.0)(react@18.0.0)
+    version: 8.10.1(date-fns@3.6.0)(react@18.0.0)
   react-dom:
     specifier: ^18
     version: 18.0.0(react@18.0.0)
@@ -193,6 +190,9 @@ devDependencies:
   postcss:
     specifier: ^8.5
     version: 8.5.0
+  prisma:
+    specifier: ^6.10.1
+    version: 6.10.1(typescript@5.0.2)
   tailwindcss:
     specifier: ^3.4.17
     version: 3.4.17
@@ -528,15 +528,12 @@ packages:
     resolution: {integrity: sha512-kz4/bnqrOrzWo8KzYguN0cden4CzLJJ+2VSpKtF8utHS3l1JS0Lhv6BLwpOX6X9yNreTbZQZwewb+/BMPDCIYQ==}
     dependencies:
       jiti: 2.4.2
-    dev: false
 
   /@prisma/debug@6.10.1:
     resolution: {integrity: sha512-k2YT53cWxv9OLjW4zSYTZ6Z7j0gPfCzcr2Mj99qsuvlxr8WAKSZ2NcSR0zLf/mP4oxnYG842IMj3utTgcd7CaA==}
-    dev: false
 
   /@prisma/engines-version@6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c:
     resolution: {integrity: sha512-ZJFTsEqapiTYVzXya6TUKYDFnSWCNegfUiG5ik9fleQva5Sk3DNyyUi7X1+0ZxWFHwHDr6BZV5Vm+iwP+LlciA==}
-    dev: false
 
   /@prisma/engines@6.10.1:
     resolution: {integrity: sha512-Q07P5rS2iPwk2IQr/rUQJ42tHjpPyFcbiH7PXZlV81Ryr9NYIgdxcUrwgVOWVm5T7ap02C0dNd1dpnNcSWig8A==}
@@ -546,7 +543,6 @@ packages:
       '@prisma/engines-version': 6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c
       '@prisma/fetch-engine': 6.10.1
       '@prisma/get-platform': 6.10.1
-    dev: false
 
   /@prisma/fetch-engine@6.10.1:
     resolution: {integrity: sha512-clmbG/Jgmrc/n6Y77QcBmAUlq9LrwI9Dbgy4pq5jeEARBpRCWJDJ7PWW1P8p0LfFU0i5fsyO7FqRzRB8mkdS4g==}
@@ -554,13 +550,11 @@ packages:
       '@prisma/debug': 6.10.1
       '@prisma/engines-version': 6.10.1-1.9b628578b3b7cae625e8c927178f15a170e74a9c
       '@prisma/get-platform': 6.10.1
-    dev: false
 
   /@prisma/get-platform@6.10.1:
     resolution: {integrity: sha512-4CY5ndKylcsce9Mv+VWp5obbR2/86SHOLVV053pwIkhVtT9C9A83yqiqI/5kJM9T1v1u1qco/bYjDKycmei9HA==}
     dependencies:
       '@prisma/debug': 6.10.1
-    dev: false
 
   /@radix-ui/number@1.1.0:
     resolution: {integrity: sha512-V3gRzhVNU1ldS5XhAPTom1fOIo4ccrjjJgmE+LI2h/WaFpHmx0MQApT+KZHnx8abG6Avtfcz4WoEciMnpFT3HQ==}
@@ -2189,8 +2183,8 @@ packages:
     engines: {node: '>=12'}
     dev: false
 
-  /date-fns@4.1.0:
-    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
+  /date-fns@3.6.0:
+    resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
     dev: false
 
   /decimal.js-light@2.5.1:
@@ -2443,7 +2437,6 @@ packages:
   /jiti@2.4.2:
     resolution: {integrity: sha512-rg9zJN+G4n2nfJl5MW3BMygZX56zKPNVEYYqq7adpmMh4Jn2QNEwhvQlFy6jPVdcod7txZtKHWnyZiA3a0zP7A==}
     hasBin: true
-    dev: false
 
   /js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -2781,7 +2774,6 @@ packages:
       '@prisma/config': 6.10.1
       '@prisma/engines': 6.10.1
       typescript: 5.0.2
-    dev: false
 
   /prop-types@15.8.1:
     resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
@@ -2794,13 +2786,13 @@ packages:
   /queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  /react-day-picker@8.10.1(date-fns@4.1.0)(react@18.0.0):
+  /react-day-picker@8.10.1(date-fns@3.6.0)(react@18.0.0):
     resolution: {integrity: sha512-TMx7fNbhLk15eqcMt+7Z7S2KF7mfTId/XJDjKE8f+IUcFn0l08/kI4FiYTL/0yuOLmEcbR4Fwe3GJf/NiiMnPA==}
     peerDependencies:
       date-fns: ^2.28.0 || ^3.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
-      date-fns: 4.1.0
+      date-fns: 3.6.0
       react: 18.0.0
     dev: false
 
