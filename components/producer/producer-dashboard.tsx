@@ -12,6 +12,7 @@ import { Logo } from "@/components/shared/logo"
 import { EnhancedProduceForm } from "./enhanced-produce-form"
 import { PricingAssistant } from "./pricing-assistant"
 import { MarketTrendsDashboard } from "./market-trends-dashboard"
+import { DetailedMarketAnalysis } from "./detailed-market-analysis"
 import { KnowledgeBaseManager } from "./knowledge-base-manager"
 import { ConversationAnalytics } from "./conversation-analytics"
 
@@ -25,7 +26,7 @@ export function ProducerDashboard() {
   const currentProducer = user?.farmName || user?.name || "Unknown Farm"
   const myProduces = produces.filter((p) => p.producer === currentProducer)
 
-  // Form state for pricing assistant
+  // Form state for pricing assistant - connected to the actual form
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -38,8 +39,12 @@ export function ProducerDashboard() {
   const handleAddProduce = async (produceData: any) => {
     setIsSubmitting(true);
     try {
+      // Use selected price from pricing assistant if available
+      const finalPrice = selectedPrice || Number.parseFloat(produceData.price);
+      
       const payload = {
         ...produceData,
+        price: finalPrice,
         producerId: user?.id,
       };
 
@@ -52,6 +57,16 @@ export function ProducerDashboard() {
       if (!response.ok) throw new Error("Failed to save produce");
       const savedProduce = await response.json();
       console.log(JSON.stringify(savedProduce,null ,2))
+      
+      // Reset form and pricing assistant
+      setFormData({
+        name: "",
+        category: "",
+        location: user?.location || "TBD",
+        farmingMethod: user?.farmingMethod || "Organic",
+        season: "Summer",
+        quantity: 50,
+      });
       setSelectedPrice(null);
     } catch (error) {
       console.error("Error adding produce:", error);
@@ -59,7 +74,7 @@ export function ProducerDashboard() {
       setIsSubmitting(false);
     }
   };
-  // ...existing code...
+
   const handleDeleteProduce = (id: string) => {
     deleteProduce(id);
   };
@@ -68,8 +83,14 @@ export function ProducerDashboard() {
     logout()
   }
 
+  // Handle form changes from the enhanced produce form
   const handleFormChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Handle price selection from pricing assistant
+  const handlePriceSelect = (price: number) => {
+    setSelectedPrice(price);
   };
 
   if (!user) {
@@ -140,6 +161,8 @@ export function ProducerDashboard() {
                 <EnhancedProduceForm
                   onSubmit={handleAddProduce}
                   isSubmitting={isSubmitting}
+                  onFormChange={handleFormChange}
+                  selectedPrice={selectedPrice}
                 />
               </div>
 
@@ -152,7 +175,7 @@ export function ProducerDashboard() {
                   farmingMethod={formData.farmingMethod}
                   season={formData.season}
                   quantity={formData.quantity}
-                  onPriceSelect={setSelectedPrice}
+                  onPriceSelect={handlePriceSelect}
                 />
               </div>
             </div>
@@ -167,7 +190,7 @@ export function ProducerDashboard() {
                   Market Overview
                 </TabsTrigger>
                 <TabsTrigger value="detailed" className="flex items-center gap-2">
-                  {/* <Search className="w-4 h-4" /> */}
+                  <Search className="w-4 h-4" />
                   Detailed Analysis
                 </TabsTrigger>
               </TabsList>
@@ -177,7 +200,7 @@ export function ProducerDashboard() {
               </TabsContent>
 
               <TabsContent value="detailed">
-                {/* <DetailedMarketAnalysis /> */}
+                <DetailedMarketAnalysis />
               </TabsContent>
             </Tabs>
           </TabsContent>

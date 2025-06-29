@@ -138,7 +138,12 @@ export function PricingAssistant({
         <CardContent>
           <div className="text-center py-8 text-gray-500">
             <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Enter produce name and category to start pricing analysis</p>
+            <p className="mb-2">Enter produce name and category to start pricing analysis</p>
+            <div className="text-xs space-y-1 text-gray-400">
+              <p>💡 Start by filling in the produce name and category</p>
+              <p>📊 The assistant will analyze market trends automatically</p>
+              <p>💰 Click on a price option to apply it to your form</p>
+            </div>
           </div>
         </CardContent>
       </Card>

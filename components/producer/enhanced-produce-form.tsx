@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,9 +14,11 @@ import { Plus, Sparkles, Loader2, X } from "lucide-react"
 interface EnhancedProduceFormProps {
   onSubmit: (data: any) => Promise<void>
   isSubmitting: boolean
+  onFormChange?: (field: string, value: any) => void
+  selectedPrice?: number | null
 }
 
-export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceFormProps) {
+export function EnhancedProduceForm({ onSubmit, isSubmitting, onFormChange, selectedPrice }: EnhancedProduceFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -35,6 +37,24 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
   const [commonUses, setCommonUses] = useState<string[]>([])
   const [newNutrition, setNewNutrition] = useState("")
   const [newUse, setNewUse] = useState("")
+
+  // Update form data and notify parent component
+  const updateFormData = (field: string, value: any) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    
+    // Notify parent component for pricing assistant
+    if (onFormChange) {
+      onFormChange(field, value);
+    }
+  };
+
+  // Update price when selected from pricing assistant
+  useEffect(() => {
+    if (selectedPrice && selectedPrice !== Number.parseFloat(formData.price)) {
+      setFormData(prev => ({ ...prev, price: selectedPrice.toString() }));
+    }
+  }, [selectedPrice]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -112,26 +132,40 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                 id="name"
                 placeholder="e.g., Organic Cherry Tomatoes"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => updateFormData("name", e.target.value)}
                 className="border-green-200 focus:border-green-400"
                 required
                 disabled={isSubmitting}
               />
             </div>
 
+            {/* Price and Quantity */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price">Price (₱) *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  placeholder="120"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="border-green-200 focus:border-green-400"
-                  required
-                  disabled={isSubmitting}
-                />
+                <div className="relative">
+                  <Input
+                    id="price"
+                    type="number"
+                    placeholder="120"
+                    value={formData.price}
+                    onChange={(e) => updateFormData("price", e.target.value)}
+                    className={`border-green-200 focus:border-green-400 ${
+                      selectedPrice && selectedPrice === Number.parseFloat(formData.price) 
+                        ? "border-blue-400 bg-blue-50" 
+                        : ""
+                    }`}
+                    required
+                    disabled={isSubmitting}
+                  />
+                  {selectedPrice && selectedPrice === Number.parseFloat(formData.price) && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                        AI Suggested
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity (kg) *</Label>
@@ -140,7 +174,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                   type="number"
                   placeholder="50"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  onChange={(e) => updateFormData("quantity", e.target.value)}
                   className="border-green-200 focus:border-green-400"
                   required
                   disabled={isSubmitting}
@@ -158,7 +192,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                 <Label htmlFor="category">Category</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  onValueChange={(value) => updateFormData("category", value)}
                 >
                   <SelectTrigger className="border-green-200 focus:border-green-400">
                     <SelectValue placeholder="Select category" />
@@ -180,7 +214,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                   id="subCategory"
                   placeholder="e.g., Cherry, Heirloom, Roma"
                   value={formData.subCategory}
-                  onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                  onChange={(e) => updateFormData("subCategory", e.target.value)}
                   className="border-green-200 focus:border-green-400"
                   disabled={isSubmitting}
                 />
@@ -195,7 +229,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="season">Season</Label>
-                <Select value={formData.season} onValueChange={(value) => setFormData({ ...formData, season: value })}>
+                <Select value={formData.season} onValueChange={(value) => updateFormData("season", value)}>
                   <SelectTrigger className="border-green-200 focus:border-green-400">
                     <SelectValue placeholder="Select season" />
                   </SelectTrigger>
@@ -213,7 +247,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                 <Label htmlFor="farmingMethod">Farming Method</Label>
                 <Select
                   value={formData.farmingMethod}
-                  onValueChange={(value) => setFormData({ ...formData, farmingMethod: value })}
+                  onValueChange={(value) => updateFormData("farmingMethod", value)}
                 >
                   <SelectTrigger className="border-green-200 focus:border-green-400">
                     <SelectValue placeholder="Select method" />
@@ -235,7 +269,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                 id="location"
                 placeholder="e.g., Benguet, Baguio City"
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                onChange={(e) => updateFormData("location", e.target.value)}
                 className="border-green-200 focus:border-green-400"
                 disabled={isSubmitting}
               />
@@ -323,7 +357,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                   id="shelfLife"
                   placeholder="e.g., 3-5 days, 1 week"
                   value={formData.shelfLife}
-                  onChange={(e) => setFormData({ ...formData, shelfLife: e.target.value })}
+                  onChange={(e) => updateFormData("shelfLife", e.target.value)}
                   className="border-green-200 focus:border-green-400"
                   disabled={isSubmitting}
                 />
@@ -335,7 +369,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                   id="storageInstructions"
                   placeholder="e.g., Refrigerate, Room temperature"
                   value={formData.storageInstructions}
-                  onChange={(e) => setFormData({ ...formData, storageInstructions: e.target.value })}
+                  onChange={(e) => updateFormData("storageInstructions", e.target.value)}
                   className="border-green-200 focus:border-green-400"
                   disabled={isSubmitting}
                 />
@@ -348,7 +382,7 @@ export function EnhancedProduceForm({ onSubmit, isSubmitting }: EnhancedProduceF
                 id="preparationTips"
                 placeholder="e.g., Wash thoroughly before use, Remove stems..."
                 value={formData.preparationTips}
-                onChange={(e) => setFormData({ ...formData, preparationTips: e.target.value })}
+                onChange={(e) => updateFormData("preparationTips", e.target.value)}
                 className="border-green-200 focus:border-green-400"
                 rows={2}
                 disabled={isSubmitting}
