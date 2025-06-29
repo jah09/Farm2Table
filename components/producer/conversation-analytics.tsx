@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MessageSquare, TrendingUp, Users, Clock, Search, Filter } from "lucide-react"
+import { MessageSquare, TrendingUp, Users, Clock, Search, Filter, BarChart3 } from "lucide-react"
 
 interface ConversationAnalytics {
   totalConversations: number
   averageResponseTime: number
+  activeUsers: number
   topQuestions: Array<{ question: string; count: number }>
   popularCategories: Array<{ category: string; count: number }>
   recentConversations: Array<{
@@ -18,16 +19,25 @@ interface ConversationAnalytics {
     response: string
     createdAt: string
     userId?: string
+    userName: string
   }>
+  conversationTrends: Array<{
+    date: string
+    count: number
+  }>
+  timeRange: string
 }
 
 export function ConversationAnalytics() {
   const [analytics, setAnalytics] = useState<ConversationAnalytics>({
     totalConversations: 0,
     averageResponseTime: 0,
+    activeUsers: 0,
     topQuestions: [],
     popularCategories: [],
-    recentConversations: []
+    recentConversations: [],
+    conversationTrends: [],
+    timeRange: "7d"
   })
   const [isLoading, setIsLoading] = useState(false)
   const [timeRange, setTimeRange] = useState("7d")
@@ -36,52 +46,12 @@ export function ConversationAnalytics() {
   const loadAnalytics = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/conversations?limit=50`)
+      const response = await fetch(`/api/conversations/analytics?timeRange=${timeRange}`)
       if (response.ok) {
         const data = await response.json()
-        const conversations = data.conversations || []
-        
-        // Calculate analytics
-        const totalConversations = conversations.length
-        const averageResponseTime = conversations.length > 0 
-          ? conversations.reduce((sum: number, conv: any) => {
-              const metadata = conv.metadata ? JSON.parse(conv.metadata) : {}
-              return sum + (metadata.responseTime || 0)
-            }, 0) / conversations.length
-          : 0
-
-        // Extract top questions
-        const questionCounts: { [key: string]: number } = {}
-        conversations.forEach((conv: any) => {
-          const question = conv.question.toLowerCase()
-          questionCounts[question] = (questionCounts[question] || 0) + 1
-        })
-        const topQuestions = Object.entries(questionCounts)
-          .map(([question, count]) => ({ question, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5)
-
-        // Extract popular categories from metadata
-        const categoryCounts: { [key: string]: number } = {}
-        conversations.forEach((conv: any) => {
-          const metadata = conv.metadata ? JSON.parse(conv.metadata) : {}
-          const categories = metadata.categories || []
-          categories.forEach((category: string) => {
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1
-          })
-        })
-        const popularCategories = Object.entries(categoryCounts)
-          .map(([category, count]) => ({ category, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5)
-
-        setAnalytics({
-          totalConversations,
-          averageResponseTime,
-          topQuestions,
-          popularCategories,
-          recentConversations: conversations.slice(0, 10)
-        })
+        setAnalytics(data)
+      } else {
+        console.error("Failed to load analytics:", response.statusText)
       }
     } catch (error) {
       console.error("Error loading conversation analytics:", error)
@@ -93,6 +63,26 @@ export function ConversationAnalytics() {
   useEffect(() => {
     loadAnalytics()
   }, [timeRange])
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Get trend data for chart
+  const getTrendData = () => {
+    if (!analytics.conversationTrends.length) return []
+    
+    return analytics.conversationTrends.map(trend => ({
+      date: new Date(trend.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      conversations: trend.count
+    }))
+  }
 
   return (
     <div className="space-y-6">
@@ -127,7 +117,7 @@ export function ConversationAnalytics() {
               <div>
                 <p className="text-sm font-medium text-green-600">Total Conversations</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {isLoading ? "..." : analytics.totalConversations}
+                  {isLoading ? "..." : analytics.totalConversations.toLocaleString()}
                 </p>
               </div>
               <MessageSquare className="w-8 h-8 text-green-400" />
@@ -141,7 +131,7 @@ export function ConversationAnalytics() {
               <div>
                 <p className="text-sm font-medium text-green-600">Avg Response Time</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {isLoading ? "..." : `${Math.round(analytics.averageResponseTime)}ms`}
+                  {isLoading ? "..." : `${analytics.averageResponseTime}ms`}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-green-400" />
@@ -155,7 +145,7 @@ export function ConversationAnalytics() {
               <div>
                 <p className="text-sm font-medium text-green-600">Active Users</p>
                 <p className="text-2xl font-bold text-green-800">
-                  {isLoading ? "..." : new Set(analytics.recentConversations.map(c => c.userId).filter(Boolean)).size}
+                  {isLoading ? "..." : analytics.activeUsers}
                 </p>
               </div>
               <Users className="w-8 h-8 text-green-400" />
@@ -163,6 +153,39 @@ export function ConversationAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Conversation Trends Chart */}
+      {analytics.conversationTrends.length > 0 && (
+        <Card className="border-green-200">
+          <CardHeader>
+            <CardTitle className="text-green-800 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2" />
+              Conversation Trends
+            </CardTitle>
+            <CardDescription>Daily conversation volume over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 flex items-end justify-between space-x-2">
+              {getTrendData().map((data, index) => {
+                const maxCount = Math.max(...getTrendData().map(d => d.conversations))
+                const height = maxCount > 0 ? (data.conversations / maxCount) * 100 : 0
+                
+                return (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div 
+                      className="w-full bg-green-200 rounded-t transition-all duration-300 hover:bg-green-300"
+                      style={{ height: `${height}%` }}
+                    />
+                    <span className="text-xs text-gray-600 mt-2 rotate-45 origin-left">
+                      {data.date}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Top Questions and Categories */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -268,11 +291,16 @@ export function ConversationAnalytics() {
               {analytics.recentConversations.map((conversation) => (
                 <div key={conversation.id} className="border border-green-100 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-sm font-medium text-green-800">
-                      "{conversation.question}"
-                    </p>
-                    <span className="text-xs text-gray-500">
-                      {new Date(conversation.createdAt).toLocaleDateString()}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800">
+                        "{conversation.question}"
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        by {conversation.userName}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {formatDate(conversation.createdAt)}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">
