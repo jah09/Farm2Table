@@ -1,10 +1,6 @@
 import OpenAI from "openai";
 import { prisma } from "./prisma";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export interface EnhancedProduceInfo {
   name: string;
   description?: string;
@@ -28,6 +24,18 @@ export async function generateRichProduceDescription(
   produceInfo: EnhancedProduceInfo
 ): Promise<string> {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return `Fresh ${produceInfo.name} from ${produceInfo.producer}. ${
+        produceInfo.farmingMethod || "Locally grown"
+      } and perfect for your kitchen needs.`;
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const contextParts = [
       `Product: ${produceInfo.name}`,
       produceInfo.category && `Category: ${produceInfo.category}`,
@@ -123,6 +131,16 @@ export function createEmbeddingText(
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key not configured");
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const response = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: text,

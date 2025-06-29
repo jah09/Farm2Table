@@ -2,12 +2,20 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAIMarketTrends } from "@/lib/pricing"
 import OpenAI from "openai"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export async function POST(request: NextRequest) {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ 
+        error: "OpenAI API key not configured" 
+      }, { status: 500 })
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     const body = await request.json()
     const { produceName, category, location, analysisType = "comprehensive" } = body
 
@@ -135,6 +143,18 @@ Format the response as JSON with this structure:
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ 
+        error: "OpenAI API key not configured" 
+      }, { status: 500 })
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     const searchParams = request.nextUrl.searchParams
     const category = searchParams.get("category") || undefined
     const location = searchParams.get("location") || undefined

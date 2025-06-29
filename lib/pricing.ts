@@ -1,10 +1,6 @@
 import OpenAI from "openai"
 import { prisma } from "./prisma"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export interface PricingData {
   suggestedPrice: number
   priceRange: { min: number; max: number }
@@ -61,6 +57,16 @@ export async function analyzePricingForProduce(
   quantity: number,
 ): Promise<PricingData> {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     // Get similar produce from database for comparison
     const similarProduce = await prisma.produce.findMany({
       where: {
@@ -448,6 +454,17 @@ export async function getPricingInsights(producerId: string): Promise<any> {
 
 export async function getAIMarketTrends(category?: string, location?: string): Promise<PriceTrendData[]> {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn("OpenAI API key not configured, falling back to regular market trends")
+      return getMarketTrends(category, location)
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     // Get current market data
     const whereConditions: any = {
       isActive: true,

@@ -2,10 +2,6 @@ import OpenAI from "openai"
 import { PrismaClient } from "@prisma/client"
 import { generateEmbedding } from "./embeddings"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 const prisma = new PrismaClient()
 
 export interface ConversationContext {
@@ -35,6 +31,16 @@ export async function getProduceRecommendation(
   context?: ConversationContext
 ): Promise<string> {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return "I'm sorry, the AI service is not configured at the moment. Please try again later."
+    }
+
+    // Initialize OpenAI client inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+
     const produceList = availableProduce
       .map(
         (p) => `${p.name} - ₱${p.price}/kg, ${p.quantity}kg available, by ${p.producer}, Description: ${p.description}`,
