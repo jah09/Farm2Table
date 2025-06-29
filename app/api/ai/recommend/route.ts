@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getSemanticRecommendations } from "@/lib/embeddings"
+import { getContextualRecommendations } from "@/lib/embeddings"
 import { 
   saveAIConversation, 
   getConversationHistory,
@@ -62,7 +62,11 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Get semantic recommendations using embeddings
-    const { recommendations, explanation } = await getSemanticRecommendations(question)
+    const { recommendations, explanation } = await getContextualRecommendations(question, {
+      location: context?.location,
+      preferences: context?.userPreferences,
+      season: context?.season
+    })
 
     // Build metadata for conversation storage
     const metadata: ConversationMetadata = {
