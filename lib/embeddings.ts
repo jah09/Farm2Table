@@ -236,8 +236,8 @@ export async function findSimilarProduce(
     const whereConditions: any = {
       isActive: true,
       quantity: { gt: 0 },
-      descriptionEmbedding: { not: { equals: [] } },
-    };
+      descriptionEmbedding: { isEmpty: false },
+    }
 
     if (filters) {
       if (filters.category) {
@@ -387,52 +387,15 @@ export async function getContextualRecommendations(
       })
       .join("\n");
 
-    const contextInfo = [
-      userContext?.location && `User location: ${userContext.location}`,
-      userContext?.season && `Current season: ${userContext.season}`,
-      userContext?.preferences?.length &&
-        `Preferences: ${userContext.preferences.join(", ")}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    const explanation = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a knowledgeable farm-to-table assistant. Explain why these produce items match the customer's query, considering location, season, and farming methods.",
-        },
-        {
-          role: "user",
-          content: `Customer asked: "${query}"
-
-${contextInfo ? `Context:\n${contextInfo}\n` : ""}
-Based on semantic similarity and context, here are the best matches:
-${produceList}
-
-Explain in 2-3 sentences why these items are perfect matches, highlighting local sourcing, seasonal availability, and quality factors.`,
-        },
-      ],
-      max_tokens: 200,
-      temperature: 0.7,
-    });
-
     return {
       recommendations: similarProduce,
-      explanation:
-        explanation.choices[0]?.message?.content ||
-        "These items were selected based on their similarity to your query and local availability.",
-    };
+      explanation: produceList,
+    }
   } catch (error) {
     console.error("Error getting contextual recommendations:", error);
     return {
       recommendations: [],
-      explanation:
-        "I'm having trouble finding recommendations right now. Please try again.",
-    };
+      explanation: "No recommendations found.",
+    }
   }
 }
-
-export { getContextualRecommendations as getSemanticRecommendations };

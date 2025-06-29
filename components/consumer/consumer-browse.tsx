@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Sparkles, LogOut, Search, ShoppingCart, Plus, Minus, Filter, X, Brain, Zap, History } from "lucide-react"
 import { useCart } from "@/components/consumer/cart-context"
-import { useProduce } from "@/components/shared/produce-context"
 import { useUser } from "@/components/shared/user-context"
 import { Logo } from "@/components/shared/logo"
 import { useRouter } from "next/navigation"
@@ -51,7 +50,10 @@ export function ConsumerBrowse() {
   const router = useRouter()
   const { user, logout } = useUser()
   const { addToCart, cart, updateQuantity } = useCart()
-  const { produces, searchProduce } = useProduce()
+  
+  // Data states
+  const [produces, setProduces] = useState<SearchResult[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("")
@@ -97,10 +99,47 @@ export function ConsumerBrowse() {
     }
   }, [user])
 
+  // Fetch all produce data from API
+  const fetchProduces = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/produce')
+      if (response.ok) {
+        const data = await response.json()
+        setProduces(data.map((item: any) => ({
+          ...item,
+          unit: item.unit || "kg",
+          similarity: 1.0
+        })))
+      } else {
+        console.error('Failed to fetch produce:', response.statusText)
+        toast({
+          title: "Error",
+          description: "Failed to load produce data",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching produce:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load produce data",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Load produce data on component mount
+  useEffect(() => {
+    fetchProduces()
+  }, [])
+
   // Get unique categories, farming methods, and seasons for filters
   const categories = [...new Set(produces.map(p => p.category).filter(Boolean))] as string[]
-  const farmingMethods = ["Organic", "Hydroponic", "Biodynamic", "Conventional"]
-  const seasons = ["Spring", "Summer", "Fall", "Winter", "Year-round"]
+  const farmingMethods = [...new Set(produces.map(p => p.farmingMethod).filter(Boolean))] as string[]
+  const seasons = [...new Set(produces.map(p => p.season).filter(Boolean))] as string[]
 
   // Perform semantic search
   const performSemanticSearch = async (query: string) => {
@@ -114,15 +153,29 @@ export function ConsumerBrowse() {
       const response = await fetch('/api/produce/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, limit: 20 })
+        body: JSON.stringify({ 
+          query, 
+          limit: 20,
+          filters: {
+            category: filters.category !== "all" ? filters.category : undefined,
+            maxPrice: filters.maxPrice,
+            farmingMethod: filters.farmingMethod !== "all" ? filters.farmingMethod : undefined,
+            season: filters.season !== "all" ? filters.season : undefined,
+          }
+        })
       })
 
       if (response.ok) {
         const data = await response.json()
         setSearchResults(data.results || [])
       } else {
+        console.error('Search API error:', response.statusText)
         // Fallback to local search
-        const localResults = await searchProduce(query)
+        const localResults = produces.filter(item =>
+          item.name.toLowerCase().includes(query.toLowerCase()) ||
+          item.description.toLowerCase().includes(query.toLowerCase()) ||
+          item.category?.toLowerCase().includes(query.toLowerCase())
+        )
         setSearchResults(localResults.map(p => ({
           ...p,
           similarity: 0.8, // Mock similarity score
@@ -132,7 +185,11 @@ export function ConsumerBrowse() {
     } catch (error) {
       console.error('Search error:', error)
       // Fallback to local search
-      const localResults = await searchProduce(query)
+      const localResults = produces.filter(item =>
+        item.name.toLowerCase().includes(query.toLowerCase()) ||
+        item.description.toLowerCase().includes(query.toLowerCase()) ||
+        item.category?.toLowerCase().includes(query.toLowerCase())
+      )
       setSearchResults(localResults.map(p => ({
         ...p,
         similarity: 0.8,
@@ -203,22 +260,22 @@ export function ConsumerBrowse() {
 
   // Get filtered results
   const getFilteredResults = () => {
-    const baseResults = searchQuery ? searchResults : produces.map(p => ({
-      ...p,
-      similarity: 1.0,
-      unit: p.unit || "kg"
-    }))
+    const baseResults = searchQuery ? searchResults : produces
     return applyFilters(baseResults)
   }
 
-  // Handle search input changes
+  // Handle search input changes and filter changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      performSemanticSearch(searchQuery)
+      if (searchQuery.trim()) {
+        performSemanticSearch(searchQuery)
+      } else {
+        setSearchResults([])
+      }
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery])
+  }, [searchQuery, filters])
 
   const handleLogout = () => {
     logout()
@@ -617,7 +674,21 @@ export function ConsumerBrowse() {
             </p>
           </div>
 
-          {isSearching ? (
+          {isLoading ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="border-green-200">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="h-4 bg-green-100 rounded animate-pulse" />
+                      <div className="h-3 bg-green-50 rounded animate-pulse" />
+                      <div className="h-3 bg-green-50 rounded w-2/3 animate-pulse" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : isSearching ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <Card key={i} className="border-green-200">
