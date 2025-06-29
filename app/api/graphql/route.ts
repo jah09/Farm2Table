@@ -2,6 +2,7 @@ import { createYoga } from "graphql-yoga";
 import { createSchema } from "graphql-yoga";
 import { PrismaClient, Prisma } from "@prisma/client";
 import { GraphQLScalarType, Kind } from "graphql";
+import { createUser, authenticateUser } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
@@ -117,6 +118,7 @@ const typeDefs = `
   type Query {
     users: [User!]!
     user(id: ObjectId!): User
+    userByEmail(email: String!): User
     produces: [Produce!]!
     produce(id: ObjectId!): Produce
     orders: [Order!]!
@@ -129,6 +131,7 @@ const typeDefs = `
 
   type Mutation {
     createUser(input: CreateUserInput!): User!
+    loginUser(email: String!, password: String!): LoginResponse!
     updateUser(id: ObjectId!, input: UpdateUserInput!): User!
     deleteUser(id: ObjectId!): Boolean!
 
@@ -141,6 +144,11 @@ const typeDefs = `
     deleteOrder(id: ObjectId!): Boolean!
 
     createAIConversation(input: CreateAIConversationInput!): AIConversation!
+  }
+
+  type LoginResponse {
+    user: User!
+    token: String
   }
 
   input CreateUserInput {
@@ -240,6 +248,8 @@ const resolvers = {
         where: { id },
         include: { produces: true, orders: true },
       }),
+    userByEmail: (_: any, { email }: { email: string }) =>
+      prisma.user.findUnique({ where: { email } }),
     produces: () =>
       prisma.produce.findMany({
         where: { isActive: true },
@@ -284,8 +294,28 @@ const resolvers = {
     aiConversations: () => prisma.aIConversation.findMany(),
   },
   Mutation: {
-    createUser: (_: any, { input }: { input: any }) =>
-      prisma.user.create({ data: input }),
+    createUser: async (_: any, { input }: { input: any }) => {
+      const { password, ...userData } = input;
+      const user = await createUser(input.email, password, input.name, input.role);
+      
+      // Return the full user data from database
+      return prisma.user.findUnique({
+        where: { id: user.id },
+        include: { produces: true, orders: true }
+      });
+    },
+    loginUser: async (_: any, { email, password }: { email: string; password: string }) => {
+      const user = await authenticateUser(email, password);
+      if (user) {
+        // Return the full user data from database
+        const fullUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          include: { produces: true, orders: true }
+        });
+        return { user: fullUser, token: null };
+      }
+      throw new Error("Invalid email or password");
+    },
     updateUser: (_: any, { id, input }: { id: string; input: any }) =>
       prisma.user.update({ where: { id }, data: input }),
     deleteUser: async (_: any, { id }: { id: string }) => {
