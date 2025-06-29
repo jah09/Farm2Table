@@ -222,7 +222,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
+    const searchParams = request.nextUrl.searchParams
     const produceId = searchParams.get("produceId")
 
     if (!produceId) {
