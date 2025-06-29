@@ -56,10 +56,10 @@ export function ConsumerBrowse() {
   const [isSearching, setIsSearching] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({
-    category: "",
+    category: "all",
     maxPrice: 500,
-    farmingMethod: "",
-    season: "",
+    farmingMethod: "all",
+    season: "all",
   })
   
   // AI Assistant states
@@ -178,10 +178,10 @@ export function ConsumerBrowse() {
   // Apply filters to search results
   const applyFilters = (results: SearchResult[]) => {
     return results.filter(item => {
-      if (filters.category && item.category !== filters.category) return false
+      if (filters.category && filters.category !== "all" && item.category !== filters.category) return false
       if (filters.maxPrice && item.price > filters.maxPrice) return false
-      if (filters.farmingMethod && item.farmingMethod !== filters.farmingMethod) return false
-      if (filters.season && item.season !== filters.season) return false
+      if (filters.farmingMethod && filters.farmingMethod !== "all" && item.farmingMethod !== filters.farmingMethod) return false
+      if (filters.season && filters.season !== "all" && item.season !== filters.season) return false
       return true
     })
   }
@@ -310,12 +310,12 @@ export function ConsumerBrowse() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-green-800 mb-2 block">Category</label>
-                    <Select value={filters.category || ""} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
+                    <Select value={filters.category || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}>
                       <SelectTrigger className="border-green-200">
                         <SelectValue placeholder="All categories" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All categories</SelectItem>
+                        <SelectItem value="all">All categories</SelectItem>
                         {categories.filter((c): c is string => !!c).map(category => (
                           <SelectItem key={category} value={category}>{category}</SelectItem>
                         ))}
@@ -337,12 +337,12 @@ export function ConsumerBrowse() {
                   
                   <div>
                     <label className="text-sm font-medium text-green-800 mb-2 block">Farming Method</label>
-                    <Select value={filters.farmingMethod || ""} onValueChange={(value) => setFilters(prev => ({ ...prev, farmingMethod: value }))}>
+                    <Select value={filters.farmingMethod || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, farmingMethod: value }))}>
                       <SelectTrigger className="border-green-200">
                         <SelectValue placeholder="All methods" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All methods</SelectItem>
+                        <SelectItem value="all">All methods</SelectItem>
                         {farmingMethods.map(method => (
                           <SelectItem key={method} value={method}>{method}</SelectItem>
                         ))}
@@ -352,12 +352,12 @@ export function ConsumerBrowse() {
                   
                   <div>
                     <label className="text-sm font-medium text-green-800 mb-2 block">Season</label>
-                    <Select value={filters.season || ""} onValueChange={(value) => setFilters(prev => ({ ...prev, season: value }))}>
+                    <Select value={filters.season || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, season: value }))}>
                       <SelectTrigger className="border-green-200">
                         <SelectValue placeholder="All seasons" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All seasons</SelectItem>
+                        <SelectItem value="all">All seasons</SelectItem>
                         {seasons.map(season => (
                           <SelectItem key={season} value={season}>{season}</SelectItem>
                         ))}

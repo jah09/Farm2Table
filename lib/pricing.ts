@@ -48,6 +48,8 @@ export interface PriceTrendData {
     averagePrice: number
     volume: number
   }>
+  marketInsight?: string
+  recommendations?: string[]
 }
 
 export async function analyzePricingForProduce(
@@ -442,4 +444,214 @@ export async function getPricingInsights(producerId: string): Promise<any> {
     console.error("Error getting pricing insights:", error)
     return null
   }
+}
+
+export async function getAIMarketTrends(category?: string, location?: string): Promise<PriceTrendData[]> {
+  try {
+    // Get current market data
+    const whereConditions: any = {
+      isActive: true,
+      quantity: { gt: 0 },
+    }
+
+    if (category) {
+      whereConditions.category = { contains: category, mode: "insensitive" }
+    }
+
+    if (location) {
+      whereConditions.location = { contains: location, mode: "insensitive" }
+    }
+
+    const produces = await prisma.produce.findMany({
+      where: whereConditions,
+      include: {
+        producer: {
+          select: {
+            name: true,
+            location: true,
+            farmingMethod: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 100,
+    })
+
+    // Group by produce name and calculate current market stats
+    const groupedProduce = produces.reduce(
+      (acc, produce) => {
+        const key = produce.name.toLowerCase()
+        if (!acc[key]) {
+          acc[key] = []
+        }
+        acc[key].push(produce)
+        return acc
+      },
+      {} as Record<string, any[]>,
+    )
+
+    // Get top 10 most active products for AI analysis
+    const topProducts = Object.entries(groupedProduce)
+      .map(([name, items]) => ({
+        name: items[0].name,
+        category: items[0].category || "Unknown",
+        items,
+        currentPrice: items[0].price,
+        averagePrice: items.reduce((sum, item) => sum + item.price, 0) / items.length,
+        supplierCount: items.length,
+        locations: [...new Set(items.map(item => item.producer.location).filter(Boolean))],
+        farmingMethods: [...new Set(items.map(item => item.producer.farmingMethod).filter(Boolean))],
+      }))
+      .sort((a, b) => b.supplierCount - a.supplierCount)
+      .slice(0, 10)
+
+    // Prepare market data for AI analysis
+    const marketData = topProducts.map(product => ({
+      name: product.name,
+      category: product.category,
+      currentPrice: product.currentPrice,
+      averagePrice: product.averagePrice,
+      supplierCount: product.supplierCount,
+      locations: product.locations,
+      farmingMethods: product.farmingMethods,
+    }))
+
+    // Generate AI-powered market analysis
+    const analysisPrompt = `Analyze the current market trends for these agricultural products in the Philippines:
+
+Market Data:
+${marketData.map(product => `
+- ${product.name} (${product.category})
+  * Current price: ₱${product.currentPrice}/kg
+  * Average market price: ₱${product.averagePrice}/kg
+  * Number of suppliers: ${product.supplierCount}
+  * Locations: ${product.locations.join(', ')}
+  * Farming methods: ${product.farmingMethods.join(', ')}
+`).join('')}
+
+Current Context:
+- Location: ${location || 'Philippines'}
+- Category filter: ${category || 'All categories'}
+- Analysis date: ${new Date().toLocaleDateString()}
+
+Please provide for each product:
+1. Price trend direction (up/down/stable) with percentage change
+2. Market insight explaining the trend
+3. Seasonal pattern prediction for the next 6 months
+4. Recommendations for producers
+
+Format the response as JSON with this structure:
+{
+  "trends": [
+    {
+      "produce": "Product Name",
+      "category": "Category",
+      "currentPrice": 150,
+      "trend": "up",
+      "trendPercentage": 7,
+      "marketInsight": "Brief explanation of the trend",
+      "seasonalPattern": [
+        {"month": "Jan", "averagePrice": 145, "volume": 40},
+        {"month": "Feb", "averagePrice": 140, "volume": 35}
+      ],
+      "recommendations": ["Recommendation 1", "Recommendation 2"]
+    }
+  ]
+}`
+
+    const aiAnalysis = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "You are a market analyst specializing in agricultural commodities in the Philippines. Provide accurate, data-driven insights about price trends, seasonal patterns, and market recommendations. Consider factors like weather, demand patterns, farming methods, and regional supply dynamics.",
+        },
+        {
+          role: "user",
+          content: analysisPrompt,
+        },
+      ],
+      max_tokens: 2000,
+      temperature: 0.3,
+    })
+
+    const aiResponse = aiAnalysis.choices[0]?.message?.content || "{}"
+    let aiTrends: any[] = []
+
+    try {
+      const parsed = JSON.parse(aiResponse)
+      aiTrends = parsed.trends || []
+    } catch (error) {
+      console.error("Error parsing AI response:", error)
+      // Fallback to mock data if AI parsing fails
+      return getMarketTrends(category, location)
+    }
+
+    // Convert AI analysis to PriceTrendData format
+    const trends: PriceTrendData[] = aiTrends.map((aiTrend: any) => {
+      const baseProduct = topProducts.find(p => 
+        p.name.toLowerCase() === aiTrend.produce.toLowerCase()
+      )
+
+      return {
+        produce: aiTrend.produce,
+        category: aiTrend.category,
+        currentPrice: aiTrend.currentPrice,
+        priceHistory: generateRealisticPriceHistory(aiTrend.currentPrice, aiTrend.trend, aiTrend.trendPercentage),
+        trend: aiTrend.trend,
+        trendPercentage: aiTrend.trendPercentage,
+        seasonalPattern: aiTrend.seasonalPattern || generateMockSeasonalPattern(aiTrend.currentPrice),
+        marketInsight: aiTrend.marketInsight,
+        recommendations: aiTrend.recommendations,
+      }
+    })
+
+    return trends
+  } catch (error) {
+    console.error("Error getting AI market trends:", error)
+    // Fallback to regular market trends if AI fails
+    return getMarketTrends(category, location)
+  }
+}
+
+function generateRealisticPriceHistory(
+  currentPrice: number, 
+  trend: string, 
+  trendPercentage: number
+) {
+  const history = []
+  let price = currentPrice
+  const days = 30
+
+  // Calculate the starting price based on trend
+  const totalChange = (trendPercentage / 100) * currentPrice
+  const startingPrice = trend === "up" 
+    ? currentPrice - totalChange 
+    : trend === "down" 
+      ? currentPrice + totalChange 
+      : currentPrice
+
+  price = startingPrice
+
+  for (let i = 0; i < days; i++) {
+    const date = new Date()
+    date.setDate(date.getDate() - (days - i - 1))
+
+    // Add realistic daily variation (±3%)
+    const dailyVariation = (Math.random() - 0.5) * 0.06
+    price = price * (1 + dailyVariation)
+
+    // Ensure price doesn't go below reasonable minimum
+    price = Math.max(price, currentPrice * 0.6)
+
+    history.push({
+      date: date.toISOString().split("T")[0],
+      price: Math.round(price),
+      volume: Math.floor(Math.random() * 100) + 10,
+    })
+  }
+
+  return history
 }

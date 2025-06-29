@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, TrendingDown, Minus, BarChart3, Calendar, Leaf, RefreshCw, DollarSign } from "lucide-react"
+import { TrendingUp, TrendingDown, Minus, BarChart3, Calendar, Leaf, RefreshCw, DollarSign, Lightbulb, Target } from "lucide-react"
 import type { PriceTrendData } from "@/lib/pricing"
 
 export function MarketTrendsDashboard() {
@@ -13,77 +13,22 @@ export function MarketTrendsDashboard() {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedLocation, setSelectedLocation] = useState<string>("all")
+  const [lastUpdated, setLastUpdated] = useState<string>("")
 
   const loadTrends = async () => {
     setIsLoading(true)
     try {
-      // Mock data - in real app would call API
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const params = new URLSearchParams()
+      if (selectedCategory !== "all") params.append("category", selectedCategory)
+      if (selectedLocation !== "all") params.append("location", selectedLocation)
 
-      const mockTrends: PriceTrendData[] = [
-        {
-          produce: "Organic Cherry Tomatoes",
-          category: "Vegetables",
-          currentPrice: 150,
-          priceHistory: [
-            { date: "2024-01-01", price: 140, volume: 45 },
-            { date: "2024-01-15", price: 145, volume: 52 },
-            { date: "2024-01-30", price: 150, volume: 48 },
-          ],
-          trend: "up",
-          trendPercentage: 7,
-          seasonalPattern: [
-            { month: "Jan", averagePrice: 145, volume: 40 },
-            { month: "Feb", averagePrice: 140, volume: 35 },
-            { month: "Mar", averagePrice: 135, volume: 60 },
-            { month: "Apr", averagePrice: 130, volume: 80 },
-            { month: "May", averagePrice: 125, volume: 95 },
-            { month: "Jun", averagePrice: 120, volume: 100 },
-          ],
-        },
-        {
-          produce: "Hydroponic Lettuce",
-          category: "Leafy Greens",
-          currentPrice: 120,
-          priceHistory: [
-            { date: "2024-01-01", price: 125, volume: 30 },
-            { date: "2024-01-15", price: 122, volume: 35 },
-            { date: "2024-01-30", price: 120, volume: 40 },
-          ],
-          trend: "down",
-          trendPercentage: 4,
-          seasonalPattern: [
-            { month: "Jan", averagePrice: 120, volume: 35 },
-            { month: "Feb", averagePrice: 118, volume: 40 },
-            { month: "Mar", averagePrice: 115, volume: 45 },
-            { month: "Apr", averagePrice: 112, volume: 50 },
-            { month: "May", averagePrice: 110, volume: 55 },
-            { month: "Jun", averagePrice: 108, volume: 60 },
-          ],
-        },
-        {
-          produce: "Organic Carrots",
-          category: "Root Vegetables",
-          currentPrice: 180,
-          priceHistory: [
-            { date: "2024-01-01", price: 175, volume: 25 },
-            { date: "2024-01-15", price: 178, volume: 28 },
-            { date: "2024-01-30", price: 180, volume: 30 },
-          ],
-          trend: "stable",
-          trendPercentage: 3,
-          seasonalPattern: [
-            { month: "Jan", averagePrice: 180, volume: 25 },
-            { month: "Feb", averagePrice: 175, volume: 30 },
-            { month: "Mar", averagePrice: 170, volume: 35 },
-            { month: "Apr", averagePrice: 165, volume: 40 },
-            { month: "May", averagePrice: 160, volume: 45 },
-            { month: "Jun", averagePrice: 155, volume: 50 },
-          ],
-        },
-      ]
+      const response = await fetch(`/api/pricing/trends?${params.toString()}`)
+      const data = await response.json()
 
-      setTrends(mockTrends)
+      if (data.trends) {
+        setTrends(data.trends)
+        setLastUpdated(data.timestamp)
+      }
     } catch (error) {
       console.error("Error loading trends:", error)
     } finally {
@@ -133,8 +78,13 @@ export function MarketTrendsDashboard() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Market Trends</h2>
-          <p className="text-gray-600">Real-time pricing insights and market analysis</p>
+          <h2 className="text-2xl font-bold text-gray-800">AI-Powered Market Trends</h2>
+          <p className="text-gray-600">Real-time pricing insights and market analysis powered by OpenAI</p>
+          {lastUpdated && (
+            <p className="text-sm text-gray-500 mt-1">
+              Last updated: {new Date(lastUpdated).toLocaleString()}
+            </p>
+          )}
         </div>
         <Button onClick={loadTrends} disabled={isLoading} variant="outline">
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
@@ -227,6 +177,35 @@ export function MarketTrendsDashboard() {
                 </div>
               </div>
 
+              {/* AI Market Insight */}
+              {trend.marketInsight && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-1 flex items-center gap-1">
+                    <Lightbulb className="w-4 h-4" />
+                    AI Market Insight
+                  </h4>
+                  <p className="text-xs text-blue-700">{trend.marketInsight}</p>
+                </div>
+              )}
+
+              {/* AI Recommendations */}
+              {trend.recommendations && trend.recommendations.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-1">
+                    <Target className="w-4 h-4" />
+                    AI Recommendations
+                  </h4>
+                  <ul className="space-y-1">
+                    {trend.recommendations.slice(0, 2).map((rec, i) => (
+                      <li key={i} className="text-xs text-green-700 flex items-start gap-1">
+                        <span className="text-green-600 mt-0.5">•</span>
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Seasonal Pattern Preview */}
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-1">
@@ -234,25 +213,13 @@ export function MarketTrendsDashboard() {
                   Seasonal Pattern
                 </h4>
                 <div className="grid grid-cols-6 gap-1">
-                  {trend.seasonalPattern.map((month, i) => (
+                  {trend.seasonalPattern.slice(0, 6).map((month, i) => (
                     <div key={i} className="text-center">
                       <div className="text-xs text-gray-500">{month.month}</div>
                       <div className="text-xs font-semibold">₱{month.averagePrice}</div>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Market Insights */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <h4 className="text-sm font-semibold text-blue-800 mb-1">Market Insight</h4>
-                <p className="text-xs text-blue-700">
-                  {trend.trend === "up"
-                    ? `Prices rising due to increased demand. Good time to list ${trend.produce.toLowerCase()}.`
-                    : trend.trend === "down"
-                      ? `Prices declining. Consider value-added options or wait for seasonal upturn.`
-                      : `Stable pricing. Consistent demand with predictable seasonal patterns.`}
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -262,14 +229,18 @@ export function MarketTrendsDashboard() {
       {/* Market Summary */}
       <Card className="border-green-200 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-green-800">Market Summary</CardTitle>
-          <CardDescription>Key insights for producers</CardDescription>
+          <CardTitle className="text-green-800">AI Market Summary</CardTitle>
+          <CardDescription>Key insights and recommendations for producers</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">{trends.filter((t) => t.trend === "up").length}</div>
               <p className="text-sm text-gray-600">Products trending up</p>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{trends.filter((t) => t.trend === "down").length}</div>
+              <p className="text-sm text-gray-600">Products trending down</p>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-600">
@@ -282,6 +253,21 @@ export function MarketTrendsDashboard() {
               <p className="text-sm text-gray-600">Active market segments</p>
             </div>
           </div>
+          
+          {/* AI Insights Summary */}
+          {trends.length > 0 && (
+            <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-blue-600" />
+                AI-Powered Market Intelligence
+              </h4>
+              <p className="text-sm text-gray-700">
+                This analysis is powered by OpenAI's advanced language models, providing real-time market insights 
+                based on current supply data, seasonal patterns, and regional market dynamics. 
+                Recommendations are tailored to help you optimize pricing and market positioning.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

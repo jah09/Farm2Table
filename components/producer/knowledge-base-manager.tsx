@@ -32,7 +32,7 @@ const categories = [
 export function KnowledgeBaseManager() {
   const [entries, setEntries] = useState<KnowledgeEntry[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("all")
   const [isLoading, setIsLoading] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null)
@@ -51,7 +51,7 @@ export function KnowledgeBaseManager() {
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.append('q', searchQuery)
-      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory)
       
       const response = await fetch(`/api/knowledge?${params}`)
       if (response.ok) {
@@ -226,7 +226,7 @@ export function KnowledgeBaseManager() {
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All categories</SelectItem>
+                <SelectItem value="all">All categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1)}

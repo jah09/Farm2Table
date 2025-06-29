@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Trash2, Edit, LogOut, Sparkles, MapPin, Calendar, Leaf, BarChart3, TrendingUp, MessageSquare } from "lucide-react"
+import { Trash2, Edit, LogOut, Sparkles, MapPin, Calendar, Leaf, BarChart3, TrendingUp, MessageSquare, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useProduce } from "@/components/shared/produce-context"
 import { Logo } from "@/components/shared/logo"
 import { EnhancedProduceForm } from "./enhanced-produce-form"
 import { PricingAssistant } from "./pricing-assistant"
 import { MarketTrendsDashboard } from "./market-trends-dashboard"
+import { DetailedMarketAnalysis } from "./detailed-market-analysis"
 import { KnowledgeBaseManager } from "./knowledge-base-manager"
 import { ConversationAnalytics } from "./conversation-analytics"
 
@@ -167,7 +168,26 @@ export function ProducerDashboard() {
 
           {/* Market Trends Tab */}
           <TabsContent value="market-trends">
-            <MarketTrendsDashboard />
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Market Overview
+                </TabsTrigger>
+                <TabsTrigger value="detailed" className="flex items-center gap-2">
+                  <Search className="w-4 h-4" />
+                  Detailed Analysis
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview">
+                <MarketTrendsDashboard />
+              </TabsContent>
+
+              <TabsContent value="detailed">
+                <DetailedMarketAnalysis />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* My Listings Tab */}
