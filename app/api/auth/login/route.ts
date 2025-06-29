@@ -3,7 +3,15 @@ import { authenticateUser } from "@/lib/auth"
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 export async function POST(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const { email, password } = await request.json()
 

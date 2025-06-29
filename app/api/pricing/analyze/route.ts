@@ -2,7 +2,15 @@ import { type NextRequest, NextResponse } from "next/server"
 import { analyzePricingForProduce } from "@/lib/pricing"
 import { verifyAuth } from "@/lib/middleware"
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 export async function POST(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const user = await verifyAuth(request)
     if (!user || user.role !== "PRODUCER") {

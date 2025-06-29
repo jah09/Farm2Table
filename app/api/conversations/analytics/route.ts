@@ -3,7 +3,15 @@ import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 export async function GET(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams
     const timeRange = searchParams.get('timeRange') || '7d'

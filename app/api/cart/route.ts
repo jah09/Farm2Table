@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyAuth } from "@/lib/middleware"
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 // GET /api/cart - Get user's cart
 export async function GET() {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const user = await verifyAuth(new NextRequest("http://localhost"))
     if (!user?.id) {
@@ -77,6 +85,11 @@ export async function GET() {
 
 // POST /api/cart - Add item to cart
 export async function POST(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const user = await verifyAuth(request)
     if (!user?.id) {
@@ -157,6 +170,11 @@ export async function POST(request: NextRequest) {
 
 // PUT /api/cart - Update cart item quantity
 export async function PUT(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const user = await verifyAuth(request)
     if (!user?.id) {
@@ -216,14 +234,18 @@ export async function PUT(request: NextRequest) {
 
 // DELETE /api/cart - Remove item from cart
 export async function DELETE(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const user = await verifyAuth(request)
     if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const searchParams = request.nextUrl.searchParams
-    const produceId = searchParams.get("produceId")
+    const { produceId } = await request.json()
 
     if (!produceId) {
       return NextResponse.json({ error: "Produce ID is required" }, { status: 400 })

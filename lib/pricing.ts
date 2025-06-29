@@ -56,6 +56,12 @@ export async function analyzePricingForProduce(
   season: string,
   quantity: number,
 ): Promise<PricingData> {
+  // Prevent execution during build time
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV) {
+    console.warn("Skipping pricing analysis during build time")
+    throw new Error("Service not available during build")
+  }
+
   try {
     // Check if OpenAI API key is available
     if (!process.env.OPENAI_API_KEY) {
@@ -453,6 +459,12 @@ export async function getPricingInsights(producerId: string): Promise<any> {
 }
 
 export async function getAIMarketTrends(category?: string, location?: string): Promise<PriceTrendData[]> {
+  // Prevent execution during build time
+  if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV) {
+    console.warn("Skipping AI market trends during build time")
+    return getMarketTrends(category, location)
+  }
+
   try {
     // Check if OpenAI API key is available
     if (!process.env.OPENAI_API_KEY) {

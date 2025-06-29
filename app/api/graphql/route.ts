@@ -6,6 +6,9 @@ import { createUser, authenticateUser } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 // Custom scalar for ObjectId
 const ObjectIdScalar = new GraphQLScalarType({
   name: "ObjectId",
@@ -393,4 +396,15 @@ const yoga = createYoga({
   fetchAPI: { Response },
 });
 
-export { yoga as GET, yoga as POST };
+// Wrap the yoga handler with build-time protection
+const protectedYoga = async (request: Request) => {
+  if (isBuildTime) {
+    return new Response(JSON.stringify({ error: "Service not available during build" }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  return yoga(request);
+};
+
+export { protectedYoga as GET, protectedYoga as POST };

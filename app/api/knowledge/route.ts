@@ -5,7 +5,15 @@ import {
 } from "@/lib/openai"
 import { prisma } from "@/lib/prisma"
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 export async function GET(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
@@ -32,6 +40,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const { title, content, category, tags } = await request.json()
 

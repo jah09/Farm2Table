@@ -2,8 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyAuth } from "@/lib/middleware"
 
+// Prevent execution during build time
+const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV
+
 // POST /api/cart/clear - Clear user's cart
 export async function POST(request: NextRequest) {
+  // Skip execution during build time
+  if (isBuildTime) {
+    return NextResponse.json({ error: "Service not available during build" }, { status: 503 })
+  }
+
   try {
     const user = await verifyAuth(request)
     if (!user?.id) {
